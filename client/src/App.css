@@ -315,3 +315,31 @@ select {
   background: #0f172a;
   color: #f8fafc;
 }
+
+.edit-button {
+  border: none;
+  border-radius: 10px;
+  padding: 8px 12px;
+  background: rgba(59, 130, 246, 0.14);
+  color: #93c5fd;
+  cursor: pointer;
+  font-weight: 600;
+}
+.edit-button:hover {
+  background: rgba(59, 130, 246, 0.22);
+}
+
+.cancel-button {
+  margin-top: 10px;
+  border: 1px solid #475569;
+  border-radius: 12px;
+  padding: 12px 16px;
+  background: transparent;
+  color: #cbd531;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.cancel-button:hover {
+  background: rgba(148, 163, 184, 0.08);
+}

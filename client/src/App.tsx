@@ -25,6 +25,8 @@ function App() {
   const [category, setCategory] = useState("Shopping");
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
+  const [editingId, setEditingId] = useState<number | null>(null);
+
 
   const fetchTransactions = async () => {
     try {
@@ -41,11 +43,24 @@ function App() {
   }, []);
 
   const addTransaction = async (e: React.FormEvent) => {
-    e.preventDefault();
+  e.preventDefault();
 
-    if (!merchant || !amount || !category) return;
+  if (!merchant || !amount || !category) return;
 
-    try {
+  try {
+    if (editingId !== null) {
+      await fetch(`http://localhost:4000/api/transactions/${editingId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          merchant,
+          amount: Number(amount),
+          category,
+        }),
+      });
+    } else {
       await fetch("http://localhost:4000/api/transactions", {
         method: "POST",
         headers: {
@@ -57,16 +72,17 @@ function App() {
           category,
         }),
       });
-
-      setMerchant("");
-      setAmount("");
-      setCategory("Shopping");
-      fetchTransactions();
-    } catch (error) {
-      console.error("Failed to add transaction:", error);
     }
-  };
 
+    setMerchant("");
+    setAmount("");
+    setCategory("Shopping");
+    setEditingId(null);
+    fetchTransactions();
+  } catch (error) {
+    console.error("Failed to save transaction:", error);
+  }
+};
   const deleteTransaction = async (id: number) => {
     try {
       await fetch(`http://localhost:4000/api/transactions/${id}`, {
@@ -77,6 +93,13 @@ function App() {
     } catch (error) {
       console.error("Failed to delete transaction:", error);
     }
+  };
+
+  const startEditing = (transaction: Transaction) => {
+    setEditingId(transaction.id);
+    setMerchant(transaction.merchant);
+    setAmount(transaction.amount.toString());
+    setCategory(transaction.category);
   };
 
   const totalSpent = useMemo(() => {
@@ -231,7 +254,29 @@ function App() {
               </select>
             </label>
 
-            <button type="submit">Add Transaction</button>
+            <button 
+            type="submit"
+            style={{
+              backgroundColor: editingId !== null ? "#f59e0b" : "#3b82f6",
+            }}
+            >
+            {editingId != null ? "Update Transaction" : "Add Transaction"}
+            </button>
+
+            {editingId !== null && (
+              <button
+              type="button"
+              className="cancel-button"
+              onClick={() => {
+                setEditingId(null);
+                setMerchant("");
+                setAmount("");
+                setCategory("Shopping");
+              }}
+              >
+                Cancel
+              </button>
+            )}
           </form>
         </div>
 
@@ -341,6 +386,12 @@ function App() {
 
                   <div className="transaction-actions">
                     <p className="amount">${t.amount.toFixed(2)}</p>
+                    <button 
+                      className="edit-button"
+                      onClick={() => startEditing(t)}
+                      >
+                        Edit
+                    </button>
                     <button
                       className="delete-button"
                       onClick={() => deleteTransaction(t.id)}

@@ -1,5 +1,5 @@
 import { PrismaClient } from "@prisma/client";
-import express from "express";
+import express, { Request, Response, } from "express";
 import cors from "cors";
 
 const app = express();
@@ -36,7 +36,28 @@ app.post("/api/transactions", async (req, res) => {
   }
 });
 
-app.delete("/api/transactions/:id", async (req, res) => {
+app.put("/api/transactions/:id", async (req: Request<{ id: string }>, res: Response) => {
+  try {
+    const id = Number(req.params.id);
+    const { merchant, amount, category } = req.body;
+
+    const updatedTransaction = await prisma.transaction.update({
+      where: { id },
+      data: {
+        merchant,
+        amount: Number(amount),
+        category,
+      },
+    });
+
+    res.status(200).json(updatedTransaction);
+  } catch (error) {
+    console.error("Failed to update transaction:", error);
+    res.status(500).json({ error: "Failed to update transaction" });
+  }
+  });
+
+app.delete("/api/transactions/:id", async (req: Request<{ id: string}>, res: Response) => {
   try {
     const id = Number(req.params.id);
 
