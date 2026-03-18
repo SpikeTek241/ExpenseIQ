@@ -1,4 +1,4 @@
-## 📊 ExpenseIQ — Smart Expense Tracking Dashboard
+## 📊 ExpenseIQ: Smart Expense Tracking Dashboard
 
 > A modern full-stack fintech dashboard designed to help users track, analyze, and optimize their spending with real-time insights.
 
