@@ -22,7 +22,7 @@ Smart expense intelligence platform for tracking, analyzing, and improving spend
 
 ## Future Improvements
 
-- 🔄 Multi-page architecture (separate dashboard, analytics, and transactions views)
+- 🔄 Multi-page architecture with client-side routing (React Router)
 - 🚨 Remaining budget alerts & notifications
 - 🔐 Authentication (multi-user support)
 - ☁️ Cloud deployment (AWS / Vercel / Railway)
