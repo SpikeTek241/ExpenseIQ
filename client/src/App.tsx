@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import "./App.css";
+import type { Budget, Transaction, InsightsResponse } from "./types";
 import {
   BarChart,
   Bar,
@@ -10,14 +11,6 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
-type Transaction = {
-  id: number;
-  merchant: string;
-  amount: number;
-  category: string;
-  createdAt?: string;
-};
-
 function App() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [merchant, setMerchant] = useState("");
@@ -26,7 +19,9 @@ function App() {
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [editingId, setEditingId] = useState<number | null>(null);
-
+  const [monthlyBudget, setMonthlyBudget] = useState<number | "">("");
+  const [budgets, setBudgets] = useState<Budget[]>([]);
+  const [insights, setInsights] = useState<string[]>([]);
 
   const fetchTransactions = async () => {
     try {
@@ -38,51 +33,81 @@ function App() {
     }
   };
 
+  const fetchBudgets = async () => {
+    try {
+      const res = await fetch("http://localhost:4000/api/budgets");
+      const data = await res.json();
+      setBudgets(data);
+    } catch (error) {
+      console.error("Failed to fetch budgets:", error);
+    }
+  };
+
+  const fetchInsights = async () => {
+    try {
+      const res = await fetch("http://localhost:4000/api/insights");
+      const data: InsightsResponse = await res.json();
+      setInsights(data.insights);
+    } catch (error) {
+      console.error("Failed to fetch insights:", error);
+    }
+  };
+
   useEffect(() => {
     fetchTransactions();
+    fetchBudgets();
+    fetchInsights();
   }, []);
 
-  const addTransaction = async (e: React.FormEvent) => {
-  e.preventDefault();
-
-  if (!merchant || !amount || !category) return;
-
-  try {
-    if (editingId !== null) {
-      await fetch(`http://localhost:4000/api/transactions/${editingId}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          merchant,
-          amount: Number(amount),
-          category,
-        }),
-      });
-    } else {
-      await fetch("http://localhost:4000/api/transactions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          merchant,
-          amount: Number(amount),
-          category,
-        }),
-      });
+  useEffect(() => {
+    if (budgets.length > 0) {
+      setMonthlyBudget(budgets[0].limit);
     }
+  }, [budgets]);
 
-    setMerchant("");
-    setAmount("");
-    setCategory("Shopping");
-    setEditingId(null);
-    fetchTransactions();
-  } catch (error) {
-    console.error("Failed to save transaction:", error);
-  }
-};
+  const addTransaction = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!merchant || !amount || !category) return;
+
+    try {
+      if (editingId !== null) {
+        await fetch(`http://localhost:4000/api/transactions/${editingId}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            merchant,
+            amount: Number(amount),
+            category,
+          }),
+        });
+      } else {
+        await fetch("http://localhost:4000/api/transactions", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            merchant,
+            amount: Number(amount),
+            category,
+          }),
+        });
+      }
+
+      setMerchant("");
+      setAmount("");
+      setCategory("Shopping");
+      setEditingId(null);
+      fetchTransactions();
+      fetchInsights();
+    } catch (error) {
+      console.error("Failed to save transaction:", error);
+    }
+  };
+
   const deleteTransaction = async (id: number) => {
     try {
       await fetch(`http://localhost:4000/api/transactions/${id}`, {
@@ -90,6 +115,7 @@ function App() {
       });
 
       fetchTransactions();
+      fetchInsights();
     } catch (error) {
       console.error("Failed to delete transaction:", error);
     }
@@ -106,6 +132,26 @@ function App() {
     return transactions.reduce((sum, t) => sum + t.amount, 0);
   }, [transactions]);
 
+  const budgetAmount = useMemo(() => {
+    return monthlyBudget ? Number(monthlyBudget) : 0;
+  }, [monthlyBudget]);
+
+  const remainingBudget = useMemo(() => {
+    return budgetAmount - totalSpent;
+  }, [budgetAmount, totalSpent]);
+
+  const budgetUsedPercent = useMemo(() => {
+    if (!budgetAmount) return 0;
+    return Math.min((totalSpent / budgetAmount) * 100, 100);
+  }, [totalSpent, budgetAmount]);
+
+  const budgetStatus = useMemo(() => {
+    if (!budgetAmount) return "No budget set";
+    if (totalSpent < budgetAmount * 0.75) return "On track";
+    if (totalSpent < budgetAmount) return "Getting close";
+    return "Over budget";
+  }, [totalSpent, budgetAmount]);
+
   const topCategory = useMemo(() => {
     if (transactions.length === 0) return "N/A";
 
@@ -118,14 +164,13 @@ function App() {
     return Object.entries(counts).sort((a, b) => b[1] - a[1])[0][0];
   }, [transactions]);
 
-  const filteredTransactions = useMemo (() => {
+  const filteredTransactions = useMemo(() => {
     return transactions.filter((transaction) => {
-      const matchesCategory = 
-      selectedCategory === "All" ||
-      transaction.category === selectedCategory;
+      const matchesCategory =
+        selectedCategory === "All" ||
+        transaction.category === selectedCategory;
 
-      const matchesSearch = 
-        transaction.merchant
+      const matchesSearch = transaction.merchant
         .toLowerCase()
         .includes(searchQuery.toLowerCase());
 
@@ -146,43 +191,6 @@ function App() {
       total: Number(total.toFixed(2)),
     }));
   }, [filteredTransactions]);
-
-  const topMerchant = useMemo(() => {
-    if (transactions.length === 0) {
-      return { name: "N/A", total: 0 }
-    }
-
-    const merchantTotals: Record<string, number> = {};
-
-    for (const transaction of transactions) {
-      merchantTotals[transaction.merchant] = 
-        (merchantTotals[transaction.merchant] || 0) + transaction.amount;
-    }
-
-    const [name, total] = Object.entries(merchantTotals).sort(
-      (a, b) => b[1] - a[1]
-    )[0];
-
-    return {
-      name, 
-      total: Number(total.toFixed(2)),
-    };
-  }, [transactions]);
-
-  const largestTransaction = useMemo(() => {
-    if (transactions.length === 0) {
-      return { merchant: "N/A", amount: 0 };
-    }
-
-    const largest = transactions.reduce((max, t) =>
-      t.amount > max.amount ? t : max
-    );
-
-    return {
-      merchant: largest.merchant,
-      amount: largest.amount,
-    };
-  }, [transactions]);
 
   return (
     <main className="dashboard">
@@ -213,6 +221,91 @@ function App() {
           <h2>{topCategory}</h2>
         </div>
       </section>
+
+      <section className="card budget-card">
+        <div className="section-header">
+          <h3>Monthly Budget</h3>
+        </div>
+
+        <div className="budget-grid">
+          <label className="budget-input-group">
+            Set Budget
+            <input
+              type="number"
+              step="0.01"
+              placeholder="Enter monthly budget"
+              value={monthlyBudget}
+              onChange={(e) =>
+                setMonthlyBudget(
+                  e.target.value === "" ? "" : Number(e.target.value)
+                )
+              }
+            />
+          </label>
+
+          <div className="budget-stats">
+            <p>
+              Budget:{" "}
+              <strong>
+                {budgetAmount ? `$${budgetAmount.toFixed(2)}` : "Not set"}
+              </strong>
+            </p>
+            <p>
+              Spent: <strong>${totalSpent.toFixed(2)}</strong>
+            </p>
+            <p>
+              Status: <strong>{budgetStatus}</strong>
+            </p>
+          </div>
+        </div>
+
+        <div className="budget-progress">
+          <div
+            className={`budget-progress-bar ${
+              budgetStatus === "On track"
+                ? "green"
+                : budgetStatus === "Getting close"
+                ? "yellow"
+                : budgetStatus === "Over budget"
+                ? "red"
+                : ""
+            }`}
+            style={{ width: `${budgetUsedPercent}%` }}
+          />
+        </div>
+
+        <p className="budget-percent">
+          {budgetAmount
+            ? `${budgetUsedPercent.toFixed(1)}% of monthly budget used`
+            : "Set a monthly budget to track progress"}
+        </p>
+      </section>
+
+      <div className="budget-stats">
+         <p>
+          Budget:{" "}
+          <strong>
+            {budgetAmount ? `$${budgetAmount.toFixed(2)}` : "Not set"}
+          </strong>
+        </p>  
+
+        <p>
+          Spent: <strong>${totalSpent.toFixed(2)}</strong>
+        </p> 
+
+        <p>
+          💶 Remaining:{" "}
+          <strong
+            style={{
+              color: remainingBudget < 0 ? "ef4444" : "#22c55e",
+            }}
+          ></strong>
+        </p>
+
+        <p>
+          Status: <strong>{budgetStatus}</strong>
+        </p>
+      </div>
 
       <section className="content-grid">
         <div className="card">
@@ -254,25 +347,25 @@ function App() {
               </select>
             </label>
 
-            <button 
-            type="submit"
-            style={{
-              backgroundColor: editingId !== null ? "#f59e0b" : "#3b82f6",
-            }}
+            <button
+              type="submit"
+              style={{
+                backgroundColor: editingId !== null ? "#f59e0b" : "#3b82f6",
+              }}
             >
-            {editingId != null ? "Update Transaction" : "Add Transaction"}
+              {editingId != null ? "Update Transaction" : "Add Transaction"}
             </button>
 
             {editingId !== null && (
               <button
-              type="button"
-              className="cancel-button"
-              onClick={() => {
-                setEditingId(null);
-                setMerchant("");
-                setAmount("");
-                setCategory("Shopping");
-              }}
+                type="button"
+                className="cancel-button"
+                onClick={() => {
+                  setEditingId(null);
+                  setMerchant("");
+                  setAmount("");
+                  setCategory("Shopping");
+                }}
               >
                 Cancel
               </button>
@@ -281,38 +374,18 @@ function App() {
         </div>
 
         <div className="card">
-          <h3>Quick Insights</h3>
+          <h3>AI Insights</h3>
 
           <div className="insight-list">
-            <div className="insight-item">
-              <span>Current total spending</span>
-              <strong>${totalSpent.toFixed(2)}</strong>
-            </div>
-
-            <div className="insight-item">
-              <span>Most used category</span>
-              <strong>{topCategory}</strong>
-            </div>
-
-            <div className="insight-item">
-              <span>Total records stored</span>
-              <strong>{transactions.length}</strong>
-            </div>
-
-            <div className="insight-item">
-              <span>Top merchant</span>
-              <strong>
-                {topMerchant.name} {topMerchant.total > 0 ? `-$${topMerchant.total.toFixed(2)}` : ""}
-              </strong>
-            </div>
-
-            <div className="insight-item">
-              <span>Largest purchase</span>
-              <strong>
-                {largestTransaction.merchant} - ${largestTransaction.amount.toFixed(2)}
-              </strong>
-            </div>
-            
+            {insights.length === 0 ? (
+              <p className="empty-state">No insights available yet.</p>
+            ) : (
+              insights.map((insight, index) => (
+                <div key={index} className="insight-item">
+                  <span>💡 {insight}</span>
+                </div>
+              ))
+            )}
           </div>
         </div>
       </section>
@@ -350,7 +423,6 @@ function App() {
           </div>
 
           <div className="filter-row">
-
             <select
               className="filter-select"
               value={selectedCategory}
@@ -364,12 +436,12 @@ function App() {
               <option value="Entertainment">Entertainment</option>
             </select>
 
-            <input 
-            className="search-input"
-            type="text"
-            placeholder="Search merchant..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            <input
+              className="search-input"
+              type="text"
+              placeholder="Search merchant..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
 
@@ -386,11 +458,11 @@ function App() {
 
                   <div className="transaction-actions">
                     <p className="amount">${t.amount.toFixed(2)}</p>
-                    <button 
+                    <button
                       className="edit-button"
                       onClick={() => startEditing(t)}
-                      >
-                        Edit
+                    >
+                      Edit
                     </button>
                     <button
                       className="delete-button"
