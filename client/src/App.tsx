@@ -11,6 +11,8 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:4000";
+
 function App() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [merchant, setMerchant] = useState("");
@@ -25,7 +27,7 @@ function App() {
 
   const fetchTransactions = async () => {
     try {
-      const res = await fetch("http://localhost:4000/api/transactions");
+      const res = await fetch(`${API_BASE}/api/transactions`);
       const data = await res.json();
       setTransactions(data);
     } catch (error) {
@@ -35,7 +37,7 @@ function App() {
 
   const fetchBudgets = async () => {
     try {
-      const res = await fetch("http://localhost:4000/api/budgets");
+      const res = await fetch(`${API_BASE}/api/budgets`);
       const data = await res.json();
       setBudgets(data);
     } catch (error) {
@@ -45,7 +47,7 @@ function App() {
 
   const fetchInsights = async () => {
     try {
-      const res = await fetch("http://localhost:4000/api/insights");
+      const res = await fetch(`${API_BASE}/api/insights`);
       const data: InsightsResponse = await res.json();
       setInsights(data.insights);
     } catch (error) {
@@ -72,7 +74,7 @@ function App() {
 
     try {
       if (editingId !== null) {
-        await fetch(`http://localhost:4000/api/transactions/${editingId}`, {
+        await fetch(`${API_BASE}/api/transactions/${editingId}`, {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
@@ -84,7 +86,7 @@ function App() {
           }),
         });
       } else {
-        await fetch("http://localhost:4000/api/transactions", {
+        await fetch(`${API_BASE}/api/transactions`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -110,7 +112,7 @@ function App() {
 
   const deleteTransaction = async (id: number) => {
     try {
-      await fetch(`http://localhost:4000/api/transactions/${id}`, {
+      await fetch(`${API_BASE}/api/transactions/${id}`, {
         method: "DELETE",
       });
 
@@ -250,9 +252,22 @@ function App() {
                 {budgetAmount ? `$${budgetAmount.toFixed(2)}` : "Not set"}
               </strong>
             </p>
+
             <p>
               Spent: <strong>${totalSpent.toFixed(2)}</strong>
             </p>
+
+            <p>
+              💶 Remaining:{" "}
+              <strong
+                style={{
+                  color: remainingBudget < 0 ? "#ef4444" : "#22c55e",
+                }}
+              >
+                ${remainingBudget.toFixed(2)}
+              </strong>
+            </p>
+
             <p>
               Status: <strong>{budgetStatus}</strong>
             </p>
@@ -280,32 +295,6 @@ function App() {
             : "Set a monthly budget to track progress"}
         </p>
       </section>
-
-      <div className="budget-stats">
-         <p>
-          Budget:{" "}
-          <strong>
-            {budgetAmount ? `$${budgetAmount.toFixed(2)}` : "Not set"}
-          </strong>
-        </p>  
-
-        <p>
-          Spent: <strong>${totalSpent.toFixed(2)}</strong>
-        </p> 
-
-        <p>
-          💶 Remaining:{" "}
-          <strong
-            style={{
-              color: remainingBudget < 0 ? "ef4444" : "#22c55e",
-            }}
-          ></strong>
-        </p>
-
-        <p>
-          Status: <strong>{budgetStatus}</strong>
-        </p>
-      </div>
 
       <section className="content-grid">
         <div className="card">
@@ -353,7 +342,7 @@ function App() {
                 backgroundColor: editingId !== null ? "#f59e0b" : "#3b82f6",
               }}
             >
-              {editingId != null ? "Update Transaction" : "Add Transaction"}
+              {editingId !== null ? "Update Transaction" : "Add Transaction"}
             </button>
 
             {editingId !== null && (
