@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import logo from "./assets/logo.png"
 import "./App.css";
 import type { Budget, Transaction, InsightsResponse } from "./types";
 import {
