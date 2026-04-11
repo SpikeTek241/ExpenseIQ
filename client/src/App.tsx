@@ -13,8 +13,6 @@ import {
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:4000";
 
-
-
 function App() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [merchant, setMerchant] = useState("");
@@ -26,41 +24,69 @@ function App() {
   const [monthlyBudget, setMonthlyBudget] = useState<number | "">("");
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [insights, setInsights] = useState<string[]>([]);
+  const [isSavingTransaction, setIsSavingTransaction] = useState(false);
 
   const fetchTransactions = async () => {
     try {
       const res = await fetch(`${API_BASE}/api/transactions`);
+
+      if (!res.ok) {
+        const text = await res.text();
+        console.error("GET /api/transactions failed:", res.status, text);
+        setTransactions([]);
+        return;
+      }
+
       const data = await res.json();
-      setTransactions(data);
+      setTransactions(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error("Failed to fetch transactions:", error);
+      setTransactions([]);
     }
   };
 
   const fetchBudgets = async () => {
     try {
       const res = await fetch(`${API_BASE}/api/budgets`);
+
+      if (!res.ok) {
+        const text = await res.text();
+        console.error("GET /api/budgets failed:", res.status, text);
+        setBudgets([]);
+        return;
+      }
+
       const data = await res.json();
-      setBudgets(data);
+      setBudgets(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error("Failed to fetch budgets:", error);
+      setBudgets([]);
     }
   };
 
   const fetchInsights = async () => {
     try {
       const res = await fetch(`${API_BASE}/api/insights`);
+
+      if (!res.ok) {
+        const text = await res.text();
+        console.error("GET /api/insights failed:", res.status, text);
+        setInsights([]);
+        return;
+      }
+
       const data: InsightsResponse = await res.json();
-      setInsights(data.insights);
+      setInsights(Array.isArray(data?.insights) ? data.insights : []);
     } catch (error) {
       console.error("Failed to fetch insights:", error);
+      setInsights([]);
     }
   };
 
   useEffect(() => {
-    fetchTransactions();
-    fetchBudgets();
-    fetchInsights();
+    void fetchTransactions();
+    void fetchBudgets();
+    void fetchInsights();
   }, []);
 
   useEffect(() => {
@@ -72,56 +98,66 @@ function App() {
   const addTransaction = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!merchant || !amount || !category) return;
+    if (!merchant || !amount || !category || isSavingTransaction) return;
 
     try {
-      if (editingId !== null) {
-        await fetch(`${API_BASE}/api/transactions/${editingId}`, {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            merchant,
-            amount: Number(amount),
-            category,
-          }),
-        });
-      } else {
-        await fetch(`${API_BASE}/api/transactions`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            merchant,
-            amount: Number(amount),
-            category,
-          }),
-        });
+      setIsSavingTransaction(true);
+
+      const url =
+        editingId !== null
+          ? `${API_BASE}/api/transactions/${editingId}`
+          : `${API_BASE}/api/transactions`;
+
+      const method = editingId !== null ? "PUT" : "POST";
+
+      const res = await fetch(url, {
+        method,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          merchant,
+          amount: Number(amount),
+          category,
+        }),
+      });
+
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(`${method} transaction failed: ${res.status} ${text}`);
       }
 
       setMerchant("");
       setAmount("");
       setCategory("Shopping");
       setEditingId(null);
-      fetchTransactions();
-      fetchInsights();
+
+      await fetchTransactions();
+      await fetchInsights();
     } catch (error) {
       console.error("Failed to save transaction:", error);
+      alert("Transaction failed. Check the console for the backend error.");
+    } finally {
+      setIsSavingTransaction(false);
     }
   };
 
   const deleteTransaction = async (id: number) => {
     try {
-      await fetch(`${API_BASE}/api/transactions/${id}`, {
+      const res = await fetch(`${API_BASE}/api/transactions/${id}`, {
         method: "DELETE",
       });
 
-      fetchTransactions();
-      fetchInsights();
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(`DELETE failed: ${res.status} ${text}`);
+      }
+
+      await fetchTransactions();
+      await fetchInsights();
     } catch (error) {
       console.error("Failed to delete transaction:", error);
+      alert("Delete failed. Check the console for details.");
     }
   };
 
@@ -133,7 +169,9 @@ function App() {
   };
 
   const totalSpent = useMemo(() => {
-    return transactions.reduce((sum, t) => sum + t.amount, 0);
+    return Array.isArray(transactions)
+      ? transactions.reduce((sum, t) => sum + t.amount, 0)
+      : 0;
   }, [transactions]);
 
   const budgetAmount = useMemo(() => {
@@ -157,7 +195,7 @@ function App() {
   }, [totalSpent, budgetAmount]);
 
   const topCategory = useMemo(() => {
-    if (transactions.length === 0) return "N/A";
+    if (!Array.isArray(transactions) || transactions.length === 0) return "N/A";
 
     const counts: Record<string, number> = {};
 
@@ -169,17 +207,19 @@ function App() {
   }, [transactions]);
 
   const filteredTransactions = useMemo(() => {
-    return transactions.filter((transaction) => {
-      const matchesCategory =
-        selectedCategory === "All" ||
-        transaction.category === selectedCategory;
+    return (Array.isArray(transactions) ? transactions : []).filter(
+      (transaction) => {
+        const matchesCategory =
+          selectedCategory === "All" ||
+          transaction.category === selectedCategory;
 
-      const matchesSearch = transaction.merchant
-        .toLowerCase()
-        .includes(searchQuery.toLowerCase());
+        const matchesSearch = transaction.merchant
+          .toLowerCase()
+          .includes(searchQuery.toLowerCase());
 
-      return matchesCategory && matchesSearch;
-    });
+        return matchesCategory && matchesSearch;
+      }
+    );
   }, [transactions, selectedCategory, searchQuery]);
 
   const categoryChartData = useMemo(() => {
@@ -217,7 +257,7 @@ function App() {
 
         <div className="card summary-card">
           <p className="card-label">Transactions</p>
-          <h2>{transactions.length}</h2>
+          <h2>{filteredTransactions.length}</h2>
         </div>
 
         <div className="card summary-card">
@@ -340,11 +380,17 @@ function App() {
 
             <button
               type="submit"
+              disabled={isSavingTransaction}
               style={{
                 backgroundColor: editingId !== null ? "#f59e0b" : "#3b82f6",
+                opacity: isSavingTransaction ? 0.7 : 1,
               }}
             >
-              {editingId !== null ? "Update Transaction" : "Add Transaction"}
+              {isSavingTransaction
+                ? "Saving..."
+                : editingId !== null
+                ? "Update Transaction"
+                : "Add Transaction"}
             </button>
 
             {editingId !== null && (
