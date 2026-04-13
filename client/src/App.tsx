@@ -1,3 +1,4 @@
+import logo from "./assets/LogoIQ.png";
 import { useEffect, useMemo, useState } from "react";
 import "./App.css";
 import type { Budget, Transaction, InsightsResponse } from "./types";
@@ -25,6 +26,7 @@ function App() {
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [insights, setInsights] = useState<string[]>([]);
   const [isSavingTransaction, setIsSavingTransaction] = useState(false);
+  const [isSavingBudget, setIsSavingBudget] = useState(false);
 
   const fetchTransactions = async () => {
     try {
@@ -94,6 +96,41 @@ function App() {
       setMonthlyBudget(budgets[0].limit);
     }
   }, [budgets]);
+
+  const saveBudget = async () => {
+    if (monthlyBudget === "" || Number(monthlyBudget) <= 0 || isSavingBudget) {
+      return;
+    }
+
+    try {
+      setIsSavingBudget(true);
+
+      const res = await fetch(`${API_BASE}/api/budgets`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          category: "Monthly",
+          limit: Number(monthlyBudget),
+          month: new Date().toISOString().slice(0, 7),
+        }),
+      });
+
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(`POST budget failed: ${res.status} ${text}`);
+      }
+
+      await fetchBudgets();
+      await fetchInsights();
+    } catch (error) {
+      console.error("Failed to save budget:", error);
+      alert("Budget failed to save. Check the console for details.");
+    } finally {
+      setIsSavingBudget(false);
+    }
+  };
 
   const addTransaction = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -166,6 +203,7 @@ function App() {
     setMerchant(transaction.merchant);
     setAmount(transaction.amount.toString());
     setCategory(transaction.category);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const totalSpent = useMemo(() => {
@@ -197,13 +235,14 @@ function App() {
   const topCategory = useMemo(() => {
     if (!Array.isArray(transactions) || transactions.length === 0) return "N/A";
 
-    const counts: Record<string, number> = {};
+    const totals: Record<string, number> = {};
 
     for (const transaction of transactions) {
-      counts[transaction.category] = (counts[transaction.category] || 0) + 1;
+      totals[transaction.category] =
+        (totals[transaction.category] || 0) + transaction.amount;
     }
 
-    return Object.entries(counts).sort((a, b) => b[1] - a[1])[0][0];
+    return Object.entries(totals).sort((a, b) => b[1] - a[1])[0][0];
   }, [transactions]);
 
   const filteredTransactions = useMemo(() => {
@@ -239,7 +278,8 @@ function App() {
   return (
     <main className="dashboard">
       <section className="hero">
-        <div>
+        <div className="hero-content">
+          <img src={logo} alt="ExpenseIQ logo" className="hero-logo" />
           <p className="eyebrow">Finance Dashboard</p>
           <h1>ExpenseIQ</h1>
           <p className="subtext">
@@ -257,7 +297,7 @@ function App() {
 
         <div className="card summary-card">
           <p className="card-label">Transactions</p>
-          <h2>{filteredTransactions.length}</h2>
+          <h2>{transactions.length}</h2>
         </div>
 
         <div className="card summary-card">
@@ -272,20 +312,31 @@ function App() {
         </div>
 
         <div className="budget-grid">
-          <label className="budget-input-group">
-            Set Budget
-            <input
-              type="number"
-              step="0.01"
-              placeholder="Enter monthly budget"
-              value={monthlyBudget}
-              onChange={(e) =>
-                setMonthlyBudget(
-                  e.target.value === "" ? "" : Number(e.target.value)
-                )
-              }
-            />
-          </label>
+          <div className="budget-input-side">
+            <label className="budget-input-group">
+              Set Budget
+              <input
+                type="number"
+                step="0.01"
+                placeholder="Enter monthly budget"
+                value={monthlyBudget}
+                onChange={(e) =>
+                  setMonthlyBudget(
+                    e.target.value === "" ? "" : Number(e.target.value)
+                  )
+                }
+              />
+            </label>
+
+            <button
+              type="button"
+              className="budget-save-button"
+              onClick={saveBudget}
+              disabled={isSavingBudget}
+            >
+              {isSavingBudget ? "Saving Budget..." : "Save Budget"}
+            </button>
+          </div>
 
           <div className="budget-stats">
             <p>
@@ -302,9 +353,7 @@ function App() {
             <p>
               💶 Remaining:{" "}
               <strong
-                style={{
-                  color: remainingBudget < 0 ? "#ef4444" : "#22c55e",
-                }}
+                style={{ color: remainingBudget < 0 ? "#ef4444" : "#22c55e" }}
               >
                 ${remainingBudget.toFixed(2)}
               </strong>
@@ -340,7 +389,7 @@ function App() {
 
       <section className="content-grid">
         <div className="card">
-          <h3>Add Transaction</h3>
+          <h3>{editingId !== null ? "Edit Transaction" : "Add Transaction"}</h3>
 
           <form className="transaction-form" onSubmit={addTransaction}>
             <label>
