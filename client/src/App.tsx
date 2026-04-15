@@ -1,4 +1,4 @@
-import logo from "./assets/LogoIQ.png";
+import logo from "./assets/logoiq.png";
 import { useEffect, useMemo, useState } from "react";
 import "./App.css";
 import type { Budget, Transaction, InsightsResponse } from "./types";
@@ -330,7 +330,7 @@ function App() {
 
             <button
               type="button"
-              className="budget-save-button"
+              className="primary-button"
               onClick={saveBudget}
               disabled={isSavingBudget}
             >
@@ -429,11 +429,8 @@ function App() {
 
             <button
               type="submit"
+              className={`primary-button ${editingId !== null ? "edit-mode" : ""}`}
               disabled={isSavingTransaction}
-              style={{
-                backgroundColor: editingId !== null ? "#f59e0b" : "#3b82f6",
-                opacity: isSavingTransaction ? 0.7 : 1,
-              }}
             >
               {isSavingTransaction
                 ? "Saving..."

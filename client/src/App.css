@@ -27,18 +27,15 @@ select {
   max-width: 1200px;
   margin: 0 auto;
   padding: 40px 24px;
-
   display: flex;
   flex-direction: column;
 }
 
 .hero {
-  flex: 1; /* THIS makes it take available space */
-
+  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-
   text-align: center;
 }
 
@@ -198,31 +195,8 @@ select {
   cursor: not-allowed;
 }
 
-.budget-save-button {
-  width: 100%;
-  margin-top: 4px;
-  border: none;
-  border-radius: 12px;
-  padding: 12px 16px;
-  background: linear-gradient(135deg, #2563eb, #3b82f6);
-  color: white;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.transaction-form button {
-  margin-top: 4px;
-  border: none;
-  border-radius: 12px;
-  padding: 12px 16px;
-  background: linear-gradient(135deg, #2563eb, #3b82f6);
-  color: white;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.transaction-form button:hover {
-  opacity: 0.95;
+.edit-mode {
+  background: linear-gradient(135deg, #f59e0b, #fbbf24);
 }
 
 .insight-list {
@@ -399,6 +373,12 @@ select {
   grid-template-columns: 320px 1fr;
   gap: 20px;
   align-items: end;
+}
+
+.budget-input-side {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .budget-input-group {
