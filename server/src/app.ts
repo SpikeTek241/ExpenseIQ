@@ -1,6 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 import express, { Request, Response } from "express";
 import cors from "cors";
+import { authenticate, AuthRequest } from "./middleware/auth";
 
 const app = express();
 const prisma = new PrismaClient();
@@ -12,9 +13,17 @@ app.get("/api/health", (_req, res) => {
   res.json({ message: "ExpenseIQ backend is running" });
 });
 
-app.get("/api/transactions", async (_req, res) => {
+app.get("/api/transactions", authenticate, async (req: AuthRequest, res: Response) => {
   try {
+    const userId = req.user?.userId;
+
+    if (!userId) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+
     const transactions = await prisma.transaction.findMany({
+      where: { userId },
       orderBy: { createdAt: "desc" },
     });
 
@@ -25,14 +34,21 @@ app.get("/api/transactions", async (_req, res) => {
   }
 });
 
-app.post("/api/transactions", async (req, res) => {
+app.post("/api/transactions", authenticate, async (req: AuthRequest, res: Response) => {
   try {
-    const { merchant, amount, category } = req.body;
+    const userId = req.user?.userId;
+    const { merchant, amount, category } = req.body ?? {};
+
+    if (!userId) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
 
     if (!merchant || amount === undefined || !category) {
-      return res.status(400).json({
+      res.status(400).json({
         error: "merchant, amount, and category are required",
       });
+      return;
     }
 
     const transaction = await prisma.transaction.create({
@@ -40,6 +56,7 @@ app.post("/api/transactions", async (req, res) => {
         merchant,
         amount: Number(amount),
         category,
+        userId,
       },
     });
 
@@ -52,10 +69,29 @@ app.post("/api/transactions", async (req, res) => {
 
 app.put(
   "/api/transactions/:id",
-  async (req: Request<{ id: string }>, res: Response) => {
+  authenticate,
+  async (req: AuthRequest & Request<{ id: string }>, res: Response) => {
     try {
+      const userId = req.user?.userId;
       const id = Number(req.params.id);
-      const { merchant, amount, category } = req.body;
+      const { merchant, amount, category } = req.body ?? {};
+
+      if (!userId) {
+        res.status(401).json({ error: "Unauthorized" });
+        return;
+      }
+
+      const existingTransaction = await prisma.transaction.findFirst({
+        where: {
+          id,
+          userId,
+        },
+      });
+
+      if (!existingTransaction) {
+        res.status(404).json({ error: "Transaction not found" });
+        return;
+      }
 
       const updatedTransaction = await prisma.transaction.update({
         where: { id },
@@ -76,9 +112,28 @@ app.put(
 
 app.delete(
   "/api/transactions/:id",
-  async (req: Request<{ id: string }>, res: Response) => {
+  authenticate,
+  async (req: AuthRequest & Request<{ id: string }>, res: Response) => {
     try {
+      const userId = req.user?.userId;
       const id = Number(req.params.id);
+
+      if (!userId) {
+        res.status(401).json({ error: "Unauthorized" });
+        return;
+      }
+
+      const existingTransaction = await prisma.transaction.findFirst({
+        where: {
+          id,
+          userId,
+        },
+      });
+
+      if (!existingTransaction) {
+        res.status(404).json({ error: "Transaction not found" });
+        return;
+      }
 
       await prisma.transaction.delete({
         where: { id },
@@ -92,9 +147,17 @@ app.delete(
   }
 );
 
-app.get("/api/budgets", async (_req, res) => {
+app.get("/api/budgets", authenticate, async (req: AuthRequest, res: Response) => {
   try {
+    const userId = req.user?.userId;
+
+    if (!userId) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+
     const budgets = await prisma.budget.findMany({
+      where: { userId },
       orderBy: { id: "desc" },
     });
 
@@ -105,20 +168,28 @@ app.get("/api/budgets", async (_req, res) => {
   }
 });
 
-app.post("/api/budgets", async (req, res) => {
+app.post("/api/budgets", authenticate, async (req: AuthRequest, res: Response) => {
   try {
-    const { category, limit, month } = req.body || {};
+    const userId = req.user?.userId;
+    const { category, limit, month } = req.body ?? {};
+
+    if (!userId) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
 
     if (!category || limit === undefined || !month) {
-      return res.status(400).json({
+      res.status(400).json({
         error: "category, limit, and month are required",
       });
+      return;
     }
 
     const existingBudget = await prisma.budget.findFirst({
       where: {
         category,
         month,
+        userId,
       },
     });
 
@@ -130,7 +201,8 @@ app.post("/api/budgets", async (req, res) => {
         },
       });
 
-      return res.status(200).json(updatedBudget);
+      res.status(200).json(updatedBudget);
+      return;
     }
 
     const newBudget = await prisma.budget.create({
@@ -138,6 +210,7 @@ app.post("/api/budgets", async (req, res) => {
         category,
         limit: Number(limit),
         month,
+        userId,
       },
     });
 
@@ -148,14 +221,24 @@ app.post("/api/budgets", async (req, res) => {
   }
 });
 
-app.get("/api/insights", async (_req, res) => {
+app.get("/api/insights", authenticate, async (req: AuthRequest, res: Response) => {
   try {
-    const transactions = await prisma.transaction.findMany();
+    const userId = req.user?.userId;
+
+    if (!userId) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+
+    const transactions = await prisma.transaction.findMany({
+      where: { userId },
+    });
 
     if (transactions.length === 0) {
-      return res.json({
+      res.json({
         insights: ["No transactions yet. Add transactions to generate insights."],
       });
+      return;
     }
 
     const total = transactions.reduce((sum, t) => sum + t.amount, 0);
@@ -179,7 +262,9 @@ app.get("/api/insights", async (_req, res) => {
       t.amount > max.amount ? t : max
     );
 
-    insights.push(`Largest expense: ${largest.merchant} - $${largest.amount.toFixed(2)}`);
+    insights.push(
+      `Largest expense: ${largest.merchant} - $${largest.amount.toFixed(2)}`
+    );
 
     res.json({ insights });
   } catch (error) {

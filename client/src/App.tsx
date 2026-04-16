@@ -2,6 +2,7 @@ import logo from "./assets/logoiq.png";
 import { useEffect, useMemo, useState } from "react";
 import "./App.css";
 import type { Budget, Transaction, InsightsResponse } from "./types";
+import LoginForm from "./components/LoginForm";
 import {
   BarChart,
   Bar,
@@ -14,7 +15,26 @@ import {
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:4000";
 
+type User = {
+  id: number;
+  email: string;
+};
+
 function App() {
+  const [token, setToken] = useState<string | null>(
+    localStorage.getItem("token")
+  );
+
+  const [user, setUser] = useState<User | null>(() => {
+    try {
+      const saved = localStorage.getItem("user");
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      localStorage.removeItem("user");
+      return null;
+    }
+  });
+
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [merchant, setMerchant] = useState("");
   const [amount, setAmount] = useState("");
@@ -28,18 +48,43 @@ function App() {
   const [isSavingTransaction, setIsSavingTransaction] = useState(false);
   const [isSavingBudget, setIsSavingBudget] = useState(false);
 
-  const fetchTransactions = async () => {
-    try {
-      const res = await fetch(`${API_BASE}/api/transactions`);
+  const authHeaders = () => ({
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${token}`,
+  });
 
-      if (!res.ok) {
-        const text = await res.text();
-        console.error("GET /api/transactions failed:", res.status, text);
-        setTransactions([]);
-        return;
-      }
+  const handleLoginSuccess = (
+    newToken: string,
+    loggedInUser: { id: number; email: string }
+  ) => {
+    setToken(newToken);
+    setUser(loggedInUser);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    setToken(null);
+    setUser(null);
+    setTransactions([]);
+    setBudgets([]);
+    setInsights([]);
+  };
+
+  const fetchTransactions = async () => {
+    if (!token) return;
+
+    try {
+      const res = await fetch(`${API_BASE}/api/transactions`, {
+        headers: authHeaders(),
+      });
 
       const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to fetch transactions");
+      }
+
       setTransactions(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error("Failed to fetch transactions:", error);
@@ -48,17 +93,19 @@ function App() {
   };
 
   const fetchBudgets = async () => {
-    try {
-      const res = await fetch(`${API_BASE}/api/budgets`);
+    if (!token) return;
 
-      if (!res.ok) {
-        const text = await res.text();
-        console.error("GET /api/budgets failed:", res.status, text);
-        setBudgets([]);
-        return;
-      }
+    try {
+      const res = await fetch(`${API_BASE}/api/budgets`, {
+        headers: authHeaders(),
+      });
 
       const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to fetch budgets");
+      }
+
       setBudgets(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error("Failed to fetch budgets:", error);
@@ -67,17 +114,19 @@ function App() {
   };
 
   const fetchInsights = async () => {
-    try {
-      const res = await fetch(`${API_BASE}/api/insights`);
+    if (!token) return;
 
-      if (!res.ok) {
-        const text = await res.text();
-        console.error("GET /api/insights failed:", res.status, text);
-        setInsights([]);
-        return;
-      }
+    try {
+      const res = await fetch(`${API_BASE}/api/insights`, {
+        headers: authHeaders(),
+      });
 
       const data: InsightsResponse = await res.json();
+
+      if (!res.ok) {
+        throw new Error((data as { error?: string }).error || "Failed to fetch insights");
+      }
+
       setInsights(Array.isArray(data?.insights) ? data.insights : []);
     } catch (error) {
       console.error("Failed to fetch insights:", error);
@@ -86,14 +135,17 @@ function App() {
   };
 
   useEffect(() => {
+    if (!token) return;
     void fetchTransactions();
     void fetchBudgets();
     void fetchInsights();
-  }, []);
+  }, [token]);
 
   useEffect(() => {
     if (budgets.length > 0) {
       setMonthlyBudget(budgets[0].limit);
+    } else {
+      setMonthlyBudget("");
     }
   }, [budgets]);
 
@@ -107,9 +159,7 @@ function App() {
 
       const res = await fetch(`${API_BASE}/api/budgets`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: authHeaders(),
         body: JSON.stringify({
           category: "Monthly",
           limit: Number(monthlyBudget),
@@ -117,16 +167,17 @@ function App() {
         }),
       });
 
+      const data = await res.json();
+
       if (!res.ok) {
-        const text = await res.text();
-        throw new Error(`POST budget failed: ${res.status} ${text}`);
+        throw new Error(data.error || "Failed to save budget");
       }
 
       await fetchBudgets();
       await fetchInsights();
     } catch (error) {
       console.error("Failed to save budget:", error);
-      alert("Budget failed to save. Check the console for details.");
+      alert(error instanceof Error ? error.message : "Budget save failed");
     } finally {
       setIsSavingBudget(false);
     }
@@ -135,7 +186,10 @@ function App() {
   const addTransaction = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!merchant || !amount || !category || isSavingTransaction) return;
+    if (!merchant.trim() || !amount || !category || isSavingTransaction) {
+      alert("Please fill in merchant, amount, and category.");
+      return;
+    }
 
     try {
       setIsSavingTransaction(true);
@@ -149,19 +203,18 @@ function App() {
 
       const res = await fetch(url, {
         method,
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: authHeaders(),
         body: JSON.stringify({
-          merchant,
+          merchant: merchant.trim(),
           amount: Number(amount),
           category,
         }),
       });
 
+      const data = await res.json();
+
       if (!res.ok) {
-        const text = await res.text();
-        throw new Error(`${method} transaction failed: ${res.status} ${text}`);
+        throw new Error(data.error || "Failed to save transaction");
       }
 
       setMerchant("");
@@ -171,9 +224,14 @@ function App() {
 
       await fetchTransactions();
       await fetchInsights();
+      await fetchBudgets();
     } catch (error) {
       console.error("Failed to save transaction:", error);
-      alert("Transaction failed. Check the console for the backend error.");
+      alert(
+        error instanceof Error
+          ? error.message
+          : "Transaction failed. Check the console."
+      );
     } finally {
       setIsSavingTransaction(false);
     }
@@ -183,18 +241,21 @@ function App() {
     try {
       const res = await fetch(`${API_BASE}/api/transactions/${id}`, {
         method: "DELETE",
+        headers: authHeaders(),
       });
 
+      const data = await res.json();
+
       if (!res.ok) {
-        const text = await res.text();
-        throw new Error(`DELETE failed: ${res.status} ${text}`);
+        throw new Error(data.error || "Failed to delete transaction");
       }
 
       await fetchTransactions();
       await fetchInsights();
+      await fetchBudgets();
     } catch (error) {
       console.error("Failed to delete transaction:", error);
-      alert("Delete failed. Check the console for details.");
+      alert(error instanceof Error ? error.message : "Delete failed");
     }
   };
 
@@ -207,9 +268,7 @@ function App() {
   };
 
   const totalSpent = useMemo(() => {
-    return Array.isArray(transactions)
-      ? transactions.reduce((sum, t) => sum + t.amount, 0)
-      : 0;
+    return transactions.reduce((sum, t) => sum + t.amount, 0);
   }, [transactions]);
 
   const budgetAmount = useMemo(() => {
@@ -233,7 +292,7 @@ function App() {
   }, [totalSpent, budgetAmount]);
 
   const topCategory = useMemo(() => {
-    if (!Array.isArray(transactions) || transactions.length === 0) return "N/A";
+    if (transactions.length === 0) return "N/A";
 
     const totals: Record<string, number> = {};
 
@@ -246,19 +305,16 @@ function App() {
   }, [transactions]);
 
   const filteredTransactions = useMemo(() => {
-    return (Array.isArray(transactions) ? transactions : []).filter(
-      (transaction) => {
-        const matchesCategory =
-          selectedCategory === "All" ||
-          transaction.category === selectedCategory;
+    return transactions.filter((transaction) => {
+      const matchesCategory =
+        selectedCategory === "All" || transaction.category === selectedCategory;
 
-        const matchesSearch = transaction.merchant
-          .toLowerCase()
-          .includes(searchQuery.toLowerCase());
+      const matchesSearch = transaction.merchant
+        .toLowerCase()
+        .includes(searchQuery.toLowerCase());
 
-        return matchesCategory && matchesSearch;
-      }
-    );
+      return matchesCategory && matchesSearch;
+    });
   }, [transactions, selectedCategory, searchQuery]);
 
   const categoryChartData = useMemo(() => {
@@ -275,6 +331,10 @@ function App() {
     }));
   }, [filteredTransactions]);
 
+  if (!token || !user) {
+    return <LoginForm onLoginSuccess={handleLoginSuccess} />;
+  }
+
   return (
     <main className="dashboard">
       <section className="hero">
@@ -286,6 +346,10 @@ function App() {
             Smart expense intelligence for tracking, reviewing, and improving
             spending habits.
           </p>
+          <p className="subtext">Signed in as {user.email}</p>
+          <button type="button" className="cancel-button" onClick={handleLogout}>
+            Logout
+          </button>
         </div>
       </section>
 
@@ -340,16 +404,11 @@ function App() {
 
           <div className="budget-stats">
             <p>
-              Budget:{" "}
-              <strong>
-                {budgetAmount ? `$${budgetAmount.toFixed(2)}` : "Not set"}
-              </strong>
+              Budget: <strong>{budgetAmount ? `$${budgetAmount.toFixed(2)}` : "Not set"}</strong>
             </p>
-
             <p>
               Spent: <strong>${totalSpent.toFixed(2)}</strong>
             </p>
-
             <p>
               💶 Remaining:{" "}
               <strong
@@ -358,7 +417,6 @@ function App() {
                 ${remainingBudget.toFixed(2)}
               </strong>
             </p>
-
             <p>
               Status: <strong>{budgetStatus}</strong>
             </p>
@@ -407,6 +465,7 @@ function App() {
               <input
                 type="number"
                 step="0.01"
+                min="0"
                 placeholder="Enter amount"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
@@ -458,7 +517,6 @@ function App() {
 
         <div className="card">
           <h3>AI Insights</h3>
-
           <div className="insight-list">
             {insights.length === 0 ? (
               <p className="empty-state">No insights available yet.</p>
@@ -489,11 +547,7 @@ function App() {
                   <XAxis dataKey="category" tick={{ fill: "#94a3b8" }} />
                   <YAxis tick={{ fill: "#94a3b8" }} />
                   <Tooltip />
-                  <Bar
-                    dataKey="total"
-                    fill="#3b82f6"
-                    radius={[8, 8, 0, 0]}
-                  />
+                  <Bar dataKey="total" fill="#3b82f6" radius={[8, 8, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
