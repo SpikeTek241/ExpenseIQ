@@ -61,7 +61,7 @@ function App() {
     setUser(loggedInUser);
   };
 
-  const handleLogout = () => {
+  const handleUnauthorized = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
     setToken(null);
@@ -71,6 +71,10 @@ function App() {
     setInsights([]);
   };
 
+  const handleLogout = () => {
+    handleUnauthorized();
+  };
+
   const fetchTransactions = async () => {
     if (!token) return;
 
@@ -78,6 +82,11 @@ function App() {
       const res = await fetch(`${API_BASE}/api/transactions`, {
         headers: authHeaders(),
       });
+
+      if (res.status === 401) {
+        handleUnauthorized();
+        return;
+      }
 
       const data = await res.json();
 
@@ -100,6 +109,11 @@ function App() {
         headers: authHeaders(),
       });
 
+      if (res.status === 401) {
+        handleUnauthorized();
+        return;
+      }
+
       const data = await res.json();
 
       if (!res.ok) {
@@ -121,10 +135,17 @@ function App() {
         headers: authHeaders(),
       });
 
+      if (res.status === 401) {
+        handleUnauthorized();
+        return;
+      }
+
       const data: InsightsResponse = await res.json();
 
       if (!res.ok) {
-        throw new Error((data as { error?: string }).error || "Failed to fetch insights");
+        throw new Error(
+          (data as { error?: string }).error || "Failed to fetch insights"
+        );
       }
 
       setInsights(Array.isArray(data?.insights) ? data.insights : []);
@@ -136,9 +157,22 @@ function App() {
 
   useEffect(() => {
     if (!token) return;
-    void fetchTransactions();
-    void fetchBudgets();
-    void fetchInsights();
+
+    const loadAll = async () => {
+      await Promise.all([
+        fetchTransactions(),
+        fetchBudgets(),
+        fetchInsights(),
+      ]);
+    };
+
+    void loadAll();
+
+    const interval = setInterval(() => {
+      void loadAll();
+    }, 10000);
+
+    return () => clearInterval(interval);
   }, [token]);
 
   useEffect(() => {
@@ -166,6 +200,11 @@ function App() {
           month: new Date().toISOString().slice(0, 7),
         }),
       });
+
+      if (res.status === 401) {
+        handleUnauthorized();
+        return;
+      }
 
       const data = await res.json();
 
@@ -211,6 +250,11 @@ function App() {
         }),
       });
 
+      if (res.status === 401) {
+        handleUnauthorized();
+        return;
+      }
+
       const data = await res.json();
 
       if (!res.ok) {
@@ -243,6 +287,11 @@ function App() {
         method: "DELETE",
         headers: authHeaders(),
       });
+
+      if (res.status === 401) {
+        handleUnauthorized();
+        return;
+      }
 
       const data = await res.json();
 
