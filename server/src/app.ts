@@ -230,41 +230,97 @@ app.get("/api/insights", authenticate, async (req: AuthRequest, res: Response) =
       return;
     }
 
+    const currentMonth = new Date().toISOString().slice(0, 7);
+
     const transactions = await prisma.transaction.findMany({
       where: { userId },
+      orderBy: { createdAt: "desc" },
+    });
+
+    const budget = await prisma.budget.findFirst({
+      where: {
+        userId,
+        month: currentMonth,
+        category: "Monthly",
+      },
+      orderBy: { id: "desc" },
     });
 
     if (transactions.length === 0) {
       res.json({
-        insights: ["No transactions yet. Add transactions to generate insights."],
+        insights: [
+          "No transactions yet. Add a few expenses to unlock smarter insights.",
+        ],
       });
       return;
     }
 
-    const total = transactions.reduce((sum, t) => sum + t.amount, 0);
+    const totalSpent = transactions.reduce((sum, t) => sum + t.amount, 0);
 
     const categoryTotals: Record<string, number> = {};
-
-    for (const t of transactions) {
-      categoryTotals[t.category] =
-        (categoryTotals[t.category] || 0) + t.amount;
+    for (const transaction of transactions) {
+      categoryTotals[transaction.category] =
+        (categoryTotals[transaction.category] || 0) + transaction.amount;
     }
 
-    const insights: string[] = [];
+    const sortedCategories = Object.entries(categoryTotals).sort(
+      (a, b) => b[1] - a[1]
+    );
 
-    for (const [category, amount] of Object.entries(categoryTotals)) {
-      if (amount > total * 0.4) {
-        insights.push(`High spending detected in ${category}`);
-      }
-    }
+    const [topCategoryName, topCategoryAmount] = sortedCategories[0];
 
-    const largest = transactions.reduce((max, t) =>
+    const largestExpense = transactions.reduce((max, t) =>
       t.amount > max.amount ? t : max
     );
 
+    const insights: string[] = [];
+
     insights.push(
-      `Largest expense: ${largest.merchant} - $${largest.amount.toFixed(2)}`
+      `You have spent $${totalSpent.toFixed(2)} so far this month.`
     );
+
+    insights.push(
+      `Your top spending category is ${topCategoryName} at $${topCategoryAmount.toFixed(
+        2
+      )}.`
+    );
+
+    insights.push(
+      `Your largest expense was ${largestExpense.merchant} for $${largestExpense.amount.toFixed(
+        2
+      )}.`
+    );
+
+    if (budget) {
+      const remaining = budget.limit - totalSpent;
+      const percentUsed = (totalSpent / budget.limit) * 100;
+
+      insights.push(
+        `You have used ${percentUsed.toFixed(1)}% of your monthly budget.`
+      );
+
+      if (remaining > 0) {
+        insights.push(
+          `You have $${remaining.toFixed(2)} remaining in your budget.`
+        );
+      } else {
+        insights.push(
+          `You are over budget by $${Math.abs(remaining).toFixed(2)}.`
+        );
+      }
+
+      if (percentUsed < 75) {
+        insights.push("You are currently on track with your budget.");
+      } else if (percentUsed < 100) {
+        insights.push("You are getting close to your monthly budget limit.");
+      } else {
+        insights.push("Your spending has exceeded your monthly budget.");
+      }
+    } else {
+      insights.push(
+        "Set a monthly budget to unlock budget-aware spending insights."
+      );
+    }
 
     res.json({ insights });
   } catch (error) {
