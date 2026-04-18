@@ -42,6 +42,12 @@ img {
   padding: 24px;
 }
 
+.auth-logo {
+  width: 80px;
+  height: auto;
+  margin-bottom: 16px;
+}
+
 .auth-card {
   width: 100%;
   max-width: 420px;
@@ -51,16 +57,19 @@ img {
   padding: 28px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.22);
   backdrop-filter: blur(8px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .auth-title {
-  margin: 0 0 8px;
+  margin-top: 4px;
   font-size: 2rem;
   text-align: center;
 }
 
 .auth-subtitle {
-  margin: 0 0 20px;
+  margin-bottom: 20px;
   color: #cbd5e1;
   text-align: center;
   line-height: 1.5;

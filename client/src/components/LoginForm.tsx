@@ -1,4 +1,5 @@
 import { useState } from "react";
+import logo from "../assets/logoiq.png"
 
 type AuthFormProps = {
   onLoginSuccess: (token: string, user: { id: number; email: string }) => void;
@@ -76,6 +77,9 @@ export default function LoginForm({ onLoginSuccess }: AuthFormProps) {
   return (
     <div className="auth-shell">
       <div className="auth-card">
+
+        <img src={logo} alt="ExpenseIQ logo" className="login-logo" />
+        
         <h1 className="auth-title">
           {mode === "login" ? "Welcome to ExpenseIQ" : "Create your account"}
         </h1>
