@@ -568,7 +568,7 @@ function App() {
           <h3>AI Insights</h3>
           <div className="insight-list">
             {insights.length === 0 ? (
-              <p className="empty-state">No insights available yet.</p>
+              <p className="empty-state">Add transactions and a monthly budget to unlock smarter insights.</p>
             ) : (
               insights.map((insight, index) => (
                 <div key={index} className="insight-item">

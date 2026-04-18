@@ -275,54 +275,62 @@ app.get("/api/insights", authenticate, async (req: AuthRequest, res: Response) =
 
     const insights: string[] = [];
 
-    insights.push(
-      `You have spent $${totalSpent.toFixed(2)} so far this month.`
-    );
-
-    insights.push(
-      `Your top spending category is ${topCategoryName} at $${topCategoryAmount.toFixed(
-        2
-      )}.`
-    );
-
-    insights.push(
-      `Your largest expense was ${largestExpense.merchant} for $${largestExpense.amount.toFixed(
-        2
-      )}.`
-    );
-
-    if (budget) {
-      const remaining = budget.limit - totalSpent;
+    if (budget && budget.limit > 0) {
       const percentUsed = (totalSpent / budget.limit) * 100;
 
       insights.push(
-        `You have used ${percentUsed.toFixed(1)}% of your monthly budget.`
+        `You’ve spent $${totalSpent.toFixed(2)} this month, which is ${percentUsed.toFixed(
+          1
+        )}% of your budget. ${
+          percentUsed < 50
+            ? "You're in a healthy range."
+            : percentUsed < 80
+            ? "You're getting close to your limit."
+            : "You're close to exceeding your budget."
+        }`
+      );
+    } else {
+      insights.push(
+        `You’ve spent $${totalSpent.toFixed(
+          2
+        )} this month. Set a monthly budget to unlock budget-aware insights.`
+      );
+    }
+
+    const topCategoryPercent = (topCategoryAmount / totalSpent) * 100;
+    insights.push(
+      `Most of your spending is in ${topCategoryName} ($${topCategoryAmount.toFixed(
+        2
+      )}), which makes up ${topCategoryPercent.toFixed(
+        1
+      )}% of your total spending.`
+    );
+
+    insights.push(
+      `Your largest purchase was $${largestExpense.amount.toFixed(
+        2
+      )} at ${largestExpense.merchant}, which stands out compared to your other expenses.`
+    );
+
+    if (budget && budget.limit > 0) {
+      const remaining = budget.limit - totalSpent;
+
+      insights.push(
+        `You still have $${Math.max(remaining, 0).toFixed(
+          2
+        )} remaining this month, so you're ${
+          remaining >= 0 ? "on track" : "over budget"
+        }.`
       );
 
-      if (remaining > 0) {
-        insights.push(
-          `You have $${remaining.toFixed(2)} remaining in your budget.`
-        );
-      } else {
+      if (remaining < 0) {
         insights.push(
           `You are over budget by $${Math.abs(remaining).toFixed(2)}.`
         );
       }
-
-      if (percentUsed < 75) {
-        insights.push("You are currently on track with your budget.");
-      } else if (percentUsed < 100) {
-        insights.push("You are getting close to your monthly budget limit.");
-      } else {
-        insights.push("Your spending has exceeded your monthly budget.");
-      }
-    } else {
-      insights.push(
-        "Set a monthly budget to unlock budget-aware spending insights."
-      );
     }
 
-    res.json({ insights });
+    res.json({ insights: insights.slice(0, 6) });
   } catch (error) {
     console.error("Failed to generate insights:", error);
     res.status(500).json({ error: "Failed to generate insights" });
