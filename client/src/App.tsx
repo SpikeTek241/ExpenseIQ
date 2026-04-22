@@ -1,17 +1,13 @@
-import logo from "./assets/logoiq.png";
 import { useEffect, useMemo, useState } from "react";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import "./App.css";
 import type { Budget, Transaction, InsightsResponse, Insight } from "./types";
 import LoginForm from "./components/LoginForm";
-import {
-  BarChart,
-  Bar,
-  CartesianGrid,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-} from "recharts";
+import ProtectedRoute from "./components/ProtectedRoute";
+import AppLayout from "./components/AppLayout";
+import DashboardPage from "./pages/DashboardPage";
+import TransactionsPage from "./pages/TransactionsPage";
+import AnalyticsPage from "./pages/AnalyticsPage";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:4000";
 
@@ -385,303 +381,66 @@ function App() {
   }
 
   return (
-    <main className="dashboard">
-      <section className="hero">
-        <div className="hero-content">
-          <img src={logo} alt="ExpenseIQ logo" className="hero-logo" />
-          <p className="eyebrow">Finance Dashboard</p>
-          <h1>ExpenseIQ</h1>
-          <p className="subtext">
-            Smart expense intelligence for tracking, reviewing, and improving
-            spending habits.
-          </p>
-          <p className="subtext">Signed in as {user.email}</p>
-          <button
-            type="button"
-            className="cancel-button"
-            onClick={handleLogout}
-          >
-            Logout
-          </button>
-        </div>
-      </section>
-
-      <section className="summary-grid">
-        <div className="card summary-card">
-          <p className="card-label">Total Spent</p>
-          <h2>${totalSpent.toFixed(2)}</h2>
-        </div>
-
-        <div className="card summary-card">
-          <p className="card-label">Transactions</p>
-          <h2>{transactions.length}</h2>
-        </div>
-
-        <div className="card summary-card">
-          <p className="card-label">Top Category</p>
-          <h2>{topCategory}</h2>
-        </div>
-      </section>
-
-      <section className="card budget-card">
-        <div className="section-header">
-          <h3>Monthly Budget</h3>
-        </div>
-
-        <div className="budget-grid">
-          <div className="budget-input-side">
-            <label className="budget-input-group">
-              Set Budget
-              <input
-                type="number"
-                step="0.01"
-                placeholder="Enter monthly budget"
-                value={monthlyBudget}
-                onChange={(e) =>
-                  setMonthlyBudget(
-                    e.target.value === "" ? "" : Number(e.target.value)
-                  )
-                }
-              />
-            </label>
-
-            <button
-              type="button"
-              className="primary-button"
-              onClick={saveBudget}
-              disabled={isSavingBudget}
-            >
-              {isSavingBudget ? "Saving Budget..." : "Save Budget"}
-            </button>
-          </div>
-
-          <div className="budget-stats">
-            <p>
-              Budget:{" "}
-              <strong>
-                {budgetAmount ? `$${budgetAmount.toFixed(2)}` : "Not set"}
-              </strong>
-            </p>
-            <p>
-              Spent: <strong>${totalSpent.toFixed(2)}</strong>
-            </p>
-            <p>
-              💶 Remaining:{" "}
-              <strong
-                style={{ color: remainingBudget < 0 ? "#ef4444" : "#22c55e" }}
-              >
-                ${remainingBudget.toFixed(2)}
-              </strong>
-            </p>
-            <p>
-              Status: <strong>{budgetStatus}</strong>
-            </p>
-          </div>
-        </div>
-
-        <div className="budget-progress">
-          <div
-            className={`budget-progress-bar ${
-              budgetStatus === "On track"
-                ? "green"
-                : budgetStatus === "Getting close"
-                ? "yellow"
-                : budgetStatus === "Over budget"
-                ? "red"
-                : ""
-            }`}
-            style={{ width: `${budgetUsedPercent}%` }}
+  <Routes>
+    <Route
+      element={
+        <ProtectedRoute token={token}>
+          <AppLayout userEmail={user.email} onLogout={handleLogout} />
+        </ProtectedRoute>
+      }
+    >
+      <Route path="/" element={<Navigate to="/dashboard" replace />} />
+      <Route
+        path="/dashboard"
+        element={
+          <DashboardPage
+            userEmail={user.email}
+            totalSpent={totalSpent}
+            transactions={transactions}
+            topCategory={topCategory}
+            monthlyBudget={monthlyBudget}
+            setMonthlyBudget={setMonthlyBudget}
+            budgetAmount={budgetAmount}
+            remainingBudget={remainingBudget}
+            budgetStatus={budgetStatus}
+            budgetUsedPercent={budgetUsedPercent}
+            isSavingBudget={isSavingBudget}
+            saveBudget={saveBudget}
+            insights={insights}
           />
-        </div>
-
-        <p className="budget-percent">
-          {budgetAmount
-            ? `${budgetUsedPercent.toFixed(1)}% of monthly budget used`
-            : "Set a monthly budget to track progress"}
-        </p>
-      </section>
-
-      <section className="content-grid">
-        <div className="card">
-          <h3>{editingId !== null ? "Edit Transaction" : "Add Transaction"}</h3>
-
-          <form className="transaction-form" onSubmit={addTransaction}>
-            <label>
-              Merchant
-              <input
-                type="text"
-                placeholder="Enter merchant name"
-                value={merchant}
-                onChange={(e) => setMerchant(e.target.value)}
-              />
-            </label>
-
-            <label>
-              Amount
-              <input
-                type="number"
-                step="0.01"
-                min="0"
-                placeholder="Enter amount"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-              />
-            </label>
-
-            <label>
-              Category
-              <select
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-              >
-                <option value="Shopping">Shopping</option>
-                <option value="Food">Food</option>
-                <option value="Transport">Transport</option>
-                <option value="Bills">Bills</option>
-                <option value="Entertainment">Entertainment</option>
-              </select>
-            </label>
-
-            <button
-              type="submit"
-              className={`primary-button ${
-                editingId !== null ? "edit-mode" : ""
-              }`}
-              disabled={isSavingTransaction}
-            >
-              {isSavingTransaction
-                ? "Saving..."
-                : editingId !== null
-                ? "Update Transaction"
-                : "Add Transaction"}
-            </button>
-
-            {editingId !== null && (
-              <button
-                type="button"
-                className="cancel-button"
-                onClick={() => {
-                  setEditingId(null);
-                  setMerchant("");
-                  setAmount("");
-                  setCategory("Shopping");
-                }}
-              >
-                Cancel
-              </button>
-            )}
-          </form>
-        </div>
-
-        <div className="card">
-          <h3>AI Insights</h3>
-          <div className="insight-list">
-            {insights.length === 0 ? (
-              <p className="empty-state">
-                Add transactions and a monthly budget to unlock smarter
-                insights.
-              </p>
-            ) : (
-              insights.map((insight, index) => (
-                <div key={index} className={`insight-item ${insight.type}`}>
-                  <span className="insight-icon">
-                    {insight.type === "positive" && "🟢"}
-                    {insight.type === "warning" && "🟡"}
-                    {insight.type === "danger" && "🔴"}
-                  </span>
-                  <p>{insight.message}</p>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-      </section>
-
-      <section className="bottom-grid">
-        <section className="card chart-card">
-          <div className="section-header">
-            <h3>Spending by Category</h3>
-          </div>
-
-          {categoryChartData.length === 0 ? (
-            <p className="empty-state">No chart data yet.</p>
-          ) : (
-            <div className="chart-wrapper">
-              <ResponsiveContainer width="100%" height={320}>
-                <BarChart data={categoryChartData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="category" tick={{ fill: "#94a3b8" }} />
-                  <YAxis tick={{ fill: "#94a3b8" }} />
-                  <Tooltip />
-                  <Bar dataKey="total" fill="#3b82f6" radius={[8, 8, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          )}
-        </section>
-
-        <section className="card transactions-card">
-          <div className="section-header">
-            <h3>Recent Transactions</h3>
-          </div>
-
-          <div className="filter-row">
-            <select
-              className="filter-select"
-              value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-            >
-              <option value="All">All Categories</option>
-              <option value="Shopping">Shopping</option>
-              <option value="Food">Food</option>
-              <option value="Transport">Transport</option>
-              <option value="Bills">Bills</option>
-              <option value="Entertainment">Entertainment</option>
-            </select>
-
-            <input
-              className="search-input"
-              type="text"
-              placeholder="Search merchant..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
-
-          {filteredTransactions.length === 0 ? (
-            <p className="empty-state">No transactions found.</p>
-          ) : (
-            <div className="transactions-list">
-              {filteredTransactions.map((t) => (
-                <div key={t.id} className="transaction-row">
-                  <div>
-                    <p className="merchant">{t.merchant}</p>
-                    <p className="category-badge">{t.category}</p>
-                  </div>
-
-                  <div className="transaction-actions">
-                    <p className="amount">${t.amount.toFixed(2)}</p>
-                    <button
-                      className="edit-button"
-                      onClick={() => startEditing(t)}
-                    >
-                      Edit
-                    </button>
-                    <button
-                      className="delete-button"
-                      onClick={() => deleteTransaction(t.id)}
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
-      </section>
-    </main>
-  );
+        }
+      />
+      <Route
+        path="/transactions"
+        element={
+          <TransactionsPage
+            merchant={merchant}
+            setMerchant={setMerchant}
+            amount={amount}
+            setAmount={setAmount}
+            category={category}
+            setCategory={setCategory}
+            editingId={editingId}
+            setEditingId={setEditingId}
+            selectedCategory={selectedCategory}
+            setSelectedCategory={setSelectedCategory}
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+            isSavingTransaction={isSavingTransaction}
+            addTransaction={addTransaction}
+            filteredTransactions={filteredTransactions}
+            startEditing={startEditing}
+            deleteTransaction={deleteTransaction}
+          />
+        }
+      />
+      <Route
+        path="/analytics"
+        element={<AnalyticsPage categoryChartData={categoryChartData} />}
+      />
+    </Route>
+  </Routes>
+);
 }
 
 export default App;
