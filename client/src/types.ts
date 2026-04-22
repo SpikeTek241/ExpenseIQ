@@ -1,18 +1,28 @@
-export interface Budget {
-    id: number;
-    category: string;
-    limit: number;
-    month: string;
-}
+export type Transaction = {
+  id: number;
+  merchant: string;
+  amount: number;
+  category: string;
+  createdAt: string;
+  updatedAt?: string;
+  userId?: number;
+};
 
-export interface Transaction {
-    id: number;
-    merchant: string;
-    amount: number;
-    category: string;
-    createdAt: string;
-}
+export type Budget = {
+  id: number;
+  category: string;
+  limit: number;
+  month: string;
+  createdAt: string;
+  updatedAt?: string;
+  userId?: number;
+};
 
-export interface InsightsResponse {
-    insights: string[];
-}
+export type Insight = {
+  type: "positive" | "warning" | "danger";
+  message: string;
+};
+
+export type InsightsResponse = {
+  insights: Insight[];
+};

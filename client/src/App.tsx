@@ -1,7 +1,7 @@
 import logo from "./assets/logoiq.png";
 import { useEffect, useMemo, useState } from "react";
 import "./App.css";
-import type { Budget, Transaction, InsightsResponse } from "./types";
+import type { Budget, Transaction, InsightsResponse, Insight } from "./types";
 import LoginForm from "./components/LoginForm";
 import {
   BarChart,
@@ -44,7 +44,7 @@ function App() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [monthlyBudget, setMonthlyBudget] = useState<number | "">("");
   const [budgets, setBudgets] = useState<Budget[]>([]);
-  const [insights, setInsights] = useState<string[]>([]);
+  const [insights, setInsights] = useState<Insight[]>([]);
   const [isSavingTransaction, setIsSavingTransaction] = useState(false);
   const [isSavingBudget, setIsSavingBudget] = useState(false);
 
@@ -396,7 +396,11 @@ function App() {
             spending habits.
           </p>
           <p className="subtext">Signed in as {user.email}</p>
-          <button type="button" className="cancel-button" onClick={handleLogout}>
+          <button
+            type="button"
+            className="cancel-button"
+            onClick={handleLogout}
+          >
             Logout
           </button>
         </div>
@@ -453,7 +457,10 @@ function App() {
 
           <div className="budget-stats">
             <p>
-              Budget: <strong>{budgetAmount ? `$${budgetAmount.toFixed(2)}` : "Not set"}</strong>
+              Budget:{" "}
+              <strong>
+                {budgetAmount ? `$${budgetAmount.toFixed(2)}` : "Not set"}
+              </strong>
             </p>
             <p>
               Spent: <strong>${totalSpent.toFixed(2)}</strong>
@@ -537,7 +544,9 @@ function App() {
 
             <button
               type="submit"
-              className={`primary-button ${editingId !== null ? "edit-mode" : ""}`}
+              className={`primary-button ${
+                editingId !== null ? "edit-mode" : ""
+              }`}
               disabled={isSavingTransaction}
             >
               {isSavingTransaction
@@ -568,11 +577,19 @@ function App() {
           <h3>AI Insights</h3>
           <div className="insight-list">
             {insights.length === 0 ? (
-              <p className="empty-state">Add transactions and a monthly budget to unlock smarter insights.</p>
+              <p className="empty-state">
+                Add transactions and a monthly budget to unlock smarter
+                insights.
+              </p>
             ) : (
               insights.map((insight, index) => (
-                <div key={index} className="insight-item">
-                  <span>💡 {insight}</span>
+                <div key={index} className={`insight-item ${insight.type}`}>
+                  <span className="insight-icon">
+                    {insight.type === "positive" && "🟢"}
+                    {insight.type === "warning" && "🟡"}
+                    {insight.type === "danger" && "🔴"}
+                  </span>
+                  <p>{insight.message}</p>
                 </div>
               ))
             )}

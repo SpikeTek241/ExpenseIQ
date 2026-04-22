@@ -6,7 +6,16 @@ import { authenticate, AuthRequest } from "./middleware/auth";
 const app = express();
 const prisma = new PrismaClient();
 
-app.use(cors());
+app.use(
+  cors({
+    origin: [
+      "http://localhost:5173",
+      "https://expense-iq-lilac.vercel.app",
+    ],
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
 app.use(express.json());
 
 app.get("/api/health", (_req, res) => {
@@ -246,10 +255,20 @@ app.get("/api/insights", authenticate, async (req: AuthRequest, res: Response) =
       orderBy: { id: "desc" },
     });
 
+    type Insight = {
+      type: "positive" | "warning" | "danger";
+      message: string;
+    };
+
+    const insights: Insight[] = [];
+
     if (transactions.length === 0) {
       res.json({
         insights: [
-          "No transactions yet. Add a few expenses to unlock smarter insights.",
+          {
+            type: "positive",
+            message: "No transactions yet. Add a few expenses to unlock smarter insights.",
+          },
         ],
       });
       return;
@@ -273,64 +292,121 @@ app.get("/api/insights", authenticate, async (req: AuthRequest, res: Response) =
       t.amount > max.amount ? t : max
     );
 
-    const insights: string[] = [];
+    const now = new Date();
+    const today = now.getDate();
+    const daysInMonth = new Date(
+      now.getFullYear(),
+      now.getMonth() + 1,
+      0
+    ).getDate();
+    const daysLeft = Math.max(daysInMonth - today, 0);
 
+    const dailyAverage = totalSpent / Math.max(today, 1);
+    const projectedSpend = dailyAverage * daysInMonth;
+
+    // Budget insight
     if (budget && budget.limit > 0) {
       const percentUsed = (totalSpent / budget.limit) * 100;
 
-      insights.push(
-        `You’ve spent $${totalSpent.toFixed(2)} this month, which is ${percentUsed.toFixed(
-          1
-        )}% of your budget. ${
+      insights.push({
+        type:
           percentUsed < 50
-            ? "You're in a healthy range."
+            ? "positive"
             : percentUsed < 80
-            ? "You're getting close to your limit."
-            : "You're close to exceeding your budget."
-        }`
-      );
-    } else {
-      insights.push(
-        `You’ve spent $${totalSpent.toFixed(
+            ? "warning"
+            : "danger",
+        message: `You’ve spent $${totalSpent.toFixed(
           2
-        )} this month. Set a monthly budget to unlock budget-aware insights.`
-      );
+        )} this month, which is ${percentUsed.toFixed(1)}% of your budget.`,
+      });
+    } else {
+      insights.push({
+        type: "warning",
+        message: `You’ve spent $${totalSpent.toFixed(
+          2
+        )} this month. Set a monthly budget to unlock better insights.`,
+      });
     }
 
+    // Top category
     const topCategoryPercent = (topCategoryAmount / totalSpent) * 100;
-    insights.push(
-      `Most of your spending is in ${topCategoryName} ($${topCategoryAmount.toFixed(
+    insights.push({
+      type: "warning",
+      message: `${topCategoryName} is your largest spending category at $${topCategoryAmount.toFixed(
         2
-      )}), which makes up ${topCategoryPercent.toFixed(
-        1
-      )}% of your total spending.`
-    );
+      )} (${topCategoryPercent.toFixed(1)}% of total spending).`,
+    });
 
-    insights.push(
-      `Your largest purchase was $${largestExpense.amount.toFixed(
+    // Largest purchase
+    insights.push({
+      type: "positive",
+      message: `Your largest purchase was $${largestExpense.amount.toFixed(
         2
-      )} at ${largestExpense.merchant}, which stands out compared to your other expenses.`
-    );
+      )} at ${largestExpense.merchant}.`,
+    });
+
+    // Projection
+    let projectionType: "positive" | "warning" | "danger" = "positive";
 
     if (budget && budget.limit > 0) {
+      const projectedPercent = (projectedSpend / budget.limit) * 100;
+
+    if (projectedPercent > 100) {
+     projectionType = "danger";
+   } else if (projectedPercent >= 80) {
+     projectionType = "warning";
+  }
+}
+
+  insights.push({
+    type: projectionType,
+    message: `At your current pace, you’re projected to spend $${projectedSpend.toFixed(
+      2
+    )} by month-end.`,
+  });
+
+    // Budget trajectory
+    if (budget && budget.limit > 0) {
+      if (projectedSpend > budget.limit) {
+        insights.push({
+          type: "danger",
+          message: `You are trending over budget by $${(
+            projectedSpend - budget.limit
+          ).toFixed(2)} this month.`,
+        });
+      } else {
+        insights.push({
+          type: "positive",
+          message: `You are currently on pace to stay $${(
+            budget.limit - projectedSpend
+          ).toFixed(2)} under budget.`,
+        });
+      }
+
       const remaining = budget.limit - totalSpent;
 
-      insights.push(
-        `You still have $${Math.max(remaining, 0).toFixed(
-          2
-        )} remaining this month, so you're ${
-          remaining >= 0 ? "on track" : "over budget"
-        }.`
-      );
+      if (daysLeft > 0) {
+        const rawDailySpend = remaining / daysLeft;
+        const safeDailySpend = Math.max(rawDailySpend, 0);
+        const percentUsed = (totalSpent / budget.limit) * 100;
 
-      if (remaining < 0) {
-        insights.push(
-          `You are over budget by $${Math.abs(remaining).toFixed(2)}.`
-        );
+        if (percentUsed >= 60) {
+          insights.push({
+            type: percentUsed >= 80 ? "danger" : "positive",
+            message: `To stay on budget, keep daily spending around $${safeDailySpend.toFixed(
+              2
+            )} for the rest of the month.`,
+          });
+        } else {
+          insights.push({
+            type: "positive",
+            message: "You still have plenty of room in your budget this month.",
+          });
+        }
       }
     }
 
-    res.json({ insights: insights.slice(0, 6) });
+    res.json({ insights: insights.slice(0, 7) });
   } catch (error) {
     console.error("Failed to generate insights:", error);
     res.status(500).json({ error: "Failed to generate insights" });
