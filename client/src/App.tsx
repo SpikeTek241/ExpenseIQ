@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes } from "react-router-dom";
 import "./App.css";
 import type { Budget, Transaction, InsightsResponse, Insight } from "./types";
 import LoginForm from "./components/LoginForm";
