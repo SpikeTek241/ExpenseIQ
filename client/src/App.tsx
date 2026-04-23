@@ -376,71 +376,126 @@ function App() {
     }));
   }, [filteredTransactions]);
 
+  const trendData = useMemo(() => {
+    const totalsByDate: Record<string, number> = {};
+
+    for (const transaction of transactions) {
+      const date = new Date(transaction.createdAt).toLocaleDateString();
+      totalsByDate[date] = (totalsByDate[date] || 0) + transaction.amount;
+    }
+
+    return Object.entries(totalsByDate).map(([date, amount]) => ({
+      date,
+      amount: Number(amount.toFixed(2)),
+    }));
+  }, [transactions]);
+
   if (!token || !user) {
     return <LoginForm onLoginSuccess={handleLoginSuccess} />;
   }
 
+  const cumulativeTrendData = useMemo(() => {
+  let runningTotal = 0;
+
+  const sorted = [...transactions].sort(
+    (a, b) =>
+      new Date(a.createdAt).getTime() -
+      new Date(b.createdAt).getTime()
+  );
+
+  return sorted.map((t) => {
+    runningTotal += t.amount;
+
+    return {
+      date: new Date(t.createdAt).toLocaleDateString(),
+      total: Number(runningTotal.toFixed(2)),
+    };
+  });
+}, [transactions]);
+
+const categoryPercentages = useMemo(() => {
+  const totals: Record<string, number> = {};
+
+  for (const t of transactions) {
+    totals[t.category] = (totals[t.category] || 0) + t.amount;
+  }
+
+  const total = transactions.reduce((sum, t) => sum + t.amount, 0);
+
+  return Object.entries(totals).map(([category, amount]) => ({
+    category,
+    percent: total ? Number(((amount / total) * 100).toFixed(1)) : 0,
+  }));
+}, [transactions]);
+
   return (
-  <Routes>
-    <Route
-      element={
-        <ProtectedRoute token={token}>
-          <AppLayout userEmail={user.email} onLogout={handleLogout} />
-        </ProtectedRoute>
-      }
-    >
-      <Route path="/" element={<Navigate to="/dashboard" replace />} />
+    <Routes>
       <Route
-        path="/dashboard"
         element={
-          <DashboardPage
-            userEmail={user.email}
-            totalSpent={totalSpent}
-            transactions={transactions}
-            topCategory={topCategory}
-            monthlyBudget={monthlyBudget}
-            setMonthlyBudget={setMonthlyBudget}
-            budgetAmount={budgetAmount}
-            remainingBudget={remainingBudget}
-            budgetStatus={budgetStatus}
-            budgetUsedPercent={budgetUsedPercent}
-            isSavingBudget={isSavingBudget}
-            saveBudget={saveBudget}
-            insights={insights}
-          />
+          <ProtectedRoute token={token}>
+            <AppLayout userEmail={user.email} onLogout={handleLogout} />
+          </ProtectedRoute>
         }
-      />
-      <Route
-        path="/transactions"
-        element={
-          <TransactionsPage
-            merchant={merchant}
-            setMerchant={setMerchant}
-            amount={amount}
-            setAmount={setAmount}
-            category={category}
-            setCategory={setCategory}
-            editingId={editingId}
-            setEditingId={setEditingId}
-            selectedCategory={selectedCategory}
-            setSelectedCategory={setSelectedCategory}
-            searchQuery={searchQuery}
-            setSearchQuery={setSearchQuery}
-            isSavingTransaction={isSavingTransaction}
-            addTransaction={addTransaction}
-            filteredTransactions={filteredTransactions}
-            startEditing={startEditing}
-            deleteTransaction={deleteTransaction}
-          />
-        }
-      />
-      <Route
-        path="/analytics"
-        element={<AnalyticsPage categoryChartData={categoryChartData} />}
-      />
-    </Route>
-  </Routes>
-);
+      >
+        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        <Route
+          path="/dashboard"
+          element={
+            <DashboardPage
+              userEmail={user.email}
+              totalSpent={totalSpent}
+              transactions={transactions}
+              topCategory={topCategory}
+              monthlyBudget={monthlyBudget}
+              setMonthlyBudget={setMonthlyBudget}
+              budgetAmount={budgetAmount}
+              remainingBudget={remainingBudget}
+              budgetStatus={budgetStatus}
+              budgetUsedPercent={budgetUsedPercent}
+              isSavingBudget={isSavingBudget}
+              saveBudget={saveBudget}
+              insights={insights}
+            />
+          }
+        />
+        <Route
+          path="/transactions"
+          element={
+            <TransactionsPage
+              merchant={merchant}
+              setMerchant={setMerchant}
+              amount={amount}
+              setAmount={setAmount}
+              category={category}
+              setCategory={setCategory}
+              editingId={editingId}
+              setEditingId={setEditingId}
+              selectedCategory={selectedCategory}
+              setSelectedCategory={setSelectedCategory}
+              searchQuery={searchQuery}
+              setSearchQuery={setSearchQuery}
+              isSavingTransaction={isSavingTransaction}
+              addTransaction={addTransaction}
+              filteredTransactions={filteredTransactions}
+              startEditing={startEditing}
+              deleteTransaction={deleteTransaction}
+            />
+          }
+        />
+        <Route
+          path="/analytics"
+          element={
+            <AnalyticsPage
+              categoryChartData={categoryChartData}
+              trendData={trendData}
+              cumulativeTrendData={cumulativeTrendData}
+              categoryPercentages={categoryPercentages}
+            />
+          }
+        />
+      </Route>
+    </Routes>
+  );
 }
 
 export default App;
