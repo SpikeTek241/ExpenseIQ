@@ -43,6 +43,7 @@ function App() {
   const [insights, setInsights] = useState<Insight[]>([]);
   const [isSavingTransaction, setIsSavingTransaction] = useState(false);
   const [isSavingBudget, setIsSavingBudget] = useState(false);
+  const [dateRange, setDateRange] = useState<"7d" | "30d" | "all">("all");
 
   const authHeaders = () => ({
     "Content-Type": "application/json",
@@ -362,10 +363,23 @@ function App() {
     });
   }, [transactions, selectedCategory, searchQuery]);
 
+  const analyticsTransactions = useMemo(() => {
+    if (dateRange === "all") return transactions;
+
+    const now = new Date();
+    const days = dateRange === "7d" ? 7 : 30;
+    const cutoff = new Date();
+    cutoff.setDate(now.getDate() - days);
+
+    return transactions.filter(
+      (transaction) => new Date(transaction.createdAt) >= cutoff
+    );
+  }, [transactions, dateRange]);
+
   const categoryChartData = useMemo(() => {
     const totals: Record<string, number> = {};
 
-    for (const transaction of filteredTransactions) {
+    for (const transaction of analyticsTransactions) {
       totals[transaction.category] =
         (totals[transaction.category] || 0) + transaction.amount;
     }
@@ -374,12 +388,12 @@ function App() {
       category,
       total: Number(total.toFixed(2)),
     }));
-  }, [filteredTransactions]);
+  }, [analyticsTransactions]);
 
   const trendData = useMemo(() => {
     const totalsByDate: Record<string, number> = {};
 
-    for (const transaction of transactions) {
+    for (const transaction of analyticsTransactions) {
       const date = new Date(transaction.createdAt).toLocaleDateString();
       totalsByDate[date] = (totalsByDate[date] || 0) + transaction.amount;
     }
@@ -388,45 +402,44 @@ function App() {
       date,
       amount: Number(amount.toFixed(2)),
     }));
-  }, [transactions]);
+  }, [analyticsTransactions]);
+
+  const cumulativeTrendData = useMemo(() => {
+    let runningTotal = 0;
+
+    const sorted = [...analyticsTransactions].sort(
+      (a, b) =>
+        new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+    );
+
+    return sorted.map((t) => {
+      runningTotal += t.amount;
+
+      return {
+        date: new Date(t.createdAt).toLocaleDateString(),
+        total: Number(runningTotal.toFixed(2)),
+      };
+    });
+  }, [analyticsTransactions]);
+
+  const categoryPercentages = useMemo(() => {
+    const totals: Record<string, number> = {};
+
+    for (const t of analyticsTransactions) {
+      totals[t.category] = (totals[t.category] || 0) + t.amount;
+    }
+
+    const total = analyticsTransactions.reduce((sum, t) => sum + t.amount, 0);
+
+    return Object.entries(totals).map(([category, amount]) => ({
+      category,
+      percent: total ? Number(((amount / total) * 100).toFixed(1)) : 0,
+    }));
+  }, [analyticsTransactions]);
 
   if (!token || !user) {
     return <LoginForm onLoginSuccess={handleLoginSuccess} />;
   }
-
-  const cumulativeTrendData = useMemo(() => {
-  let runningTotal = 0;
-
-  const sorted = [...transactions].sort(
-    (a, b) =>
-      new Date(a.createdAt).getTime() -
-      new Date(b.createdAt).getTime()
-  );
-
-  return sorted.map((t) => {
-    runningTotal += t.amount;
-
-    return {
-      date: new Date(t.createdAt).toLocaleDateString(),
-      total: Number(runningTotal.toFixed(2)),
-    };
-  });
-}, [transactions]);
-
-const categoryPercentages = useMemo(() => {
-  const totals: Record<string, number> = {};
-
-  for (const t of transactions) {
-    totals[t.category] = (totals[t.category] || 0) + t.amount;
-  }
-
-  const total = transactions.reduce((sum, t) => sum + t.amount, 0);
-
-  return Object.entries(totals).map(([category, amount]) => ({
-    category,
-    percent: total ? Number(((amount / total) * 100).toFixed(1)) : 0,
-  }));
-}, [transactions]);
 
   return (
     <Routes>
@@ -490,6 +503,8 @@ const categoryPercentages = useMemo(() => {
               trendData={trendData}
               cumulativeTrendData={cumulativeTrendData}
               categoryPercentages={categoryPercentages}
+              dateRange={dateRange}
+              setDateRange={setDateRange}
             />
           }
         />

@@ -15,6 +15,8 @@ type AnalyticsPageProps = {
   trendData: { date: string; amount: number }[];
   cumulativeTrendData: { date: string; total: number }[];
   categoryPercentages: { category: string; percent: number }[];
+  dateRange: "7d" | "30d" | "all";
+  setDateRange: React.Dispatch<React.SetStateAction<"7d" | "30d" | "all">>;
 };
 
 export default function AnalyticsPage({
@@ -22,9 +24,41 @@ export default function AnalyticsPage({
   trendData,
   cumulativeTrendData,
   categoryPercentages,
+  dateRange,
+  setDateRange,
 }: AnalyticsPageProps) {
   return (
     <>
+      <section className="card">
+        <div className="section-header">
+          <h3>Analytics Filters</h3>
+        </div>
+
+        <div className="filter-row">
+          <button
+            type="button"
+            className={`filter-chip ${dateRange === "7d" ? "active" : ""}`}
+            onClick={() => setDateRange("7d")}
+          >
+            Last 7 Days
+          </button>
+          <button
+            type="button"
+            className={`filter-chip ${dateRange === "30d" ? "active" : ""}`}
+            onClick={() => setDateRange("30d")}
+          >
+            Last 30 Days
+          </button>
+          <button
+            type="button"
+            className={`filter-chip ${dateRange === "all" ? "active" : ""}`}
+            onClick={() => setDateRange("all")}
+          >
+            All Time
+          </button>
+        </div>
+      </section>
+
       <section className="summary-grid">
         {categoryPercentages.length === 0 ? (
           <div className="card">

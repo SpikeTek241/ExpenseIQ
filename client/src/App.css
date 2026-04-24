@@ -644,3 +644,25 @@ img {
     width: 100%;
   }
 }
+
+.filter-chip {
+  border: 1px solid #334155;
+  border-radius: 999px;
+  padding: 10px 14px;
+  background: transparent;
+  color: #cbd5e1;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.filter-chip:hover {
+  background: rgba(148, 163, 184, 0.08);
+  border-color: #475569;
+}
+
+.filter-chip.active {
+  background: rgba(59, 130, 246, 0.18);
+  color: #bfdbfe;
+  border-color: rgba(59, 130, 246, 0.35);
+}
