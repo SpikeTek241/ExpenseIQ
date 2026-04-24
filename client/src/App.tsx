@@ -47,8 +47,6 @@ function App() {
   const [isSavingBudget, setIsSavingBudget] = useState(false);
   const [dateRange, setDateRange] = useState<DateRange>("all");
   const [isLoadingTransactions, setIsLoadingTransactions] = useState(false);
-  const [isLoadingBudgets, setIsLoadingBudgets] = useState(false);
-  const [isLoadingInsights, setIsLoadingInsights] = useState(false);
 
   const authHeaders = () => ({
     "Content-Type": "application/json",
@@ -111,8 +109,6 @@ function App() {
     if (!token) return;
 
     try {
-        setIsLoadingBudgets(true);
-
       const res = await fetch(`${API_BASE}/api/budgets`, {
         headers: authHeaders(),
       });
@@ -132,8 +128,6 @@ function App() {
     } catch (error) {
       console.error("Failed to fetch budgets:", error);
       setBudgets([]);
-    } finally {
-        setIsLoadingBudgets(false);
     }
   };
 
@@ -141,8 +135,6 @@ function App() {
     if (!token) return;
 
     try {
-      setIsLoadingInsights(true);
-
       const res = await fetch(`${API_BASE}/api/insights`, {
         headers: authHeaders(),
       });
@@ -164,8 +156,6 @@ function App() {
     } catch (error) {
       console.error("Failed to fetch insights:", error);
       setInsights([]);
-    } finally {
-      setIsLoadingInsights(false);
     }
   };
 
@@ -351,37 +341,42 @@ function App() {
   };
 
   const exportTransactionsCSV = () => {
-    if (transactions.length === 0) return;
+    if (transactions.length === 0) {
+      alert("No transactions to export.");
+      return;
+    }
 
     const headers = ["Merchant", "Amount", "Category", "Date"];
 
-    const rows = transactions.map((t) => [
-      t.merchant,
-      t.amount,
-      t.category,
-      new Date(t.createdAt).toISOString().split("T")[0],
+    const rows = transactions.map((transaction) => [
+      transaction.merchant,
+      transaction.amount.toFixed(2),
+      transaction.category,
+      new Date(transaction.createdAt).toISOString().split("T")[0],
     ]);
 
-    const csv = [headers, ...rows].map((r) => r.join(",")).join("\n");
+    const csv = [headers, ...rows]
+      .map((row) => row.map((value) => `"${value}"`).join(","))
+      .join("\n");
 
-    const blob = new Blob([csv], { type: "text/csv" });
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
 
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "transactions.csv";
-    a.click();
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "expenseiq-transactions.csv";
+    link.click();
 
     URL.revokeObjectURL(url);
   };
 
   const deleteTransaction = async (id: number) => {
-    const confirmDelete = window.confirm(
+    const confirmed = window.confirm(
       "Are you sure you want to delete this transaction?"
     );
 
-    if (!confirmDelete) return;
-    
+    if (!confirmed) return;
+
     try {
       const res = await fetch(`${API_BASE}/api/transactions/${id}`, {
         method: "DELETE",
@@ -417,7 +412,10 @@ function App() {
   };
 
   const totalSpent = useMemo(() => {
-    return transactions.reduce((sum, transaction) => sum + transaction.amount, 0);
+    return transactions.reduce(
+      (sum, transaction) => sum + transaction.amount,
+      0
+    );
   }, [transactions]);
 
   const budgetAmount = useMemo(() => {
@@ -497,7 +495,6 @@ function App() {
 
     for (const transaction of analyticsTransactions) {
       const date = new Date(transaction.createdAt).toISOString().split("T")[0];
-
       totalsByDate[date] = (totalsByDate[date] || 0) + transaction.amount;
     }
 
@@ -657,7 +654,7 @@ function App() {
               addTransaction={addTransaction}
               seedDemoTransactions={seedDemoTransactions}
               exportTransactionsCSV={exportTransactionsCSV}
-              filteredTransactions= {filteredTransactions}
+              filteredTransactions={filteredTransactions}
               startEditing={startEditing}
               deleteTransaction={deleteTransaction}
             />

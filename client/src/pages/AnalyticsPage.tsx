@@ -21,6 +21,7 @@ type AnalyticsPageProps = {
   dateRange: DateRange;
   setDateRange: Dispatch<SetStateAction<DateRange>>;
   analyticsInsights: string[];
+  isLoading: boolean;
 };
 
 export default function AnalyticsPage({
@@ -31,6 +32,7 @@ export default function AnalyticsPage({
   dateRange,
   setDateRange,
   analyticsInsights,
+  isLoading,
 }: AnalyticsPageProps) {
   return (
     <>
@@ -72,17 +74,27 @@ export default function AnalyticsPage({
         </div>
 
         <div className="insight-list">
-          {analyticsInsights.map((insight, index) => (
-            <div key={index} className="insight-item positive">
-              <span className="insight-icon">🧠</span>
-              <p>{insight}</p>
-            </div>
-          ))}
+          {isLoading ? (
+            <p className="empty-state">Loading insights...</p>
+          ) : analyticsInsights.length === 0 ? (
+            <p className="empty-state">No insights available yet.</p>
+          ) : (
+            analyticsInsights.map((insight, index) => (
+              <div key={index} className="insight-item positive">
+                <span className="insight-icon">🧠</span>
+                <p>{insight}</p>
+              </div>
+            ))
+          )}
         </div>
       </section>
 
       <section className="summary-grid">
-        {categoryPercentages.length === 0 ? (
+        {isLoading ? (
+          <div className="card">
+            <p className="empty-state">Loading category data...</p>
+          </div>
+        ) : categoryPercentages.length === 0 ? (
           <div className="card">
             <p className="empty-state">No category percentage data yet.</p>
           </div>
@@ -101,7 +113,9 @@ export default function AnalyticsPage({
           <h3>Daily Spending</h3>
         </div>
 
-        {trendData.length === 0 ? (
+        {isLoading ? (
+          <p className="empty-state">Loading analytics...</p>
+        ) : trendData.length === 0 ? (
           <p className="empty-state">No trend data yet.</p>
         ) : (
           <div className="chart-wrapper">
@@ -112,7 +126,7 @@ export default function AnalyticsPage({
                 <YAxis tick={{ fill: "#94a3b8" }} />
                 <Tooltip />
                 <Line
-                  type="monotone"
+                  type="linear"
                   dataKey="amount"
                   stroke="#3b82f6"
                   strokeWidth={2}
@@ -128,7 +142,9 @@ export default function AnalyticsPage({
           <h3>Total Spending Over Time</h3>
         </div>
 
-        {cumulativeTrendData.length === 0 ? (
+        {isLoading ? (
+          <p className="empty-state">Loading analytics...</p>
+        ) : cumulativeTrendData.length === 0 ? (
           <p className="empty-state">No cumulative trend data yet.</p>
         ) : (
           <div className="chart-wrapper">
@@ -139,7 +155,7 @@ export default function AnalyticsPage({
                 <YAxis tick={{ fill: "#94a3b8" }} />
                 <Tooltip />
                 <Line
-                  type="monotone"
+                  type="linear"
                   dataKey="total"
                   stroke="#22c55e"
                   strokeWidth={3}
@@ -155,7 +171,9 @@ export default function AnalyticsPage({
           <h3>Spending by Category</h3>
         </div>
 
-        {categoryChartData.length === 0 ? (
+        {isLoading ? (
+          <p className="empty-state">Loading analytics...</p>
+        ) : categoryChartData.length === 0 ? (
           <p className="empty-state">No chart data yet.</p>
         ) : (
           <div className="chart-wrapper">

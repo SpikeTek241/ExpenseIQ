@@ -75,10 +75,7 @@ export default function TransactionsPage({
 
           <label>
             Category
-            <select
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-            >
+            <select value={category} onChange={(e) => setCategory(e.target.value)}>
               <option value="Shopping">Shopping</option>
               <option value="Food">Food</option>
               <option value="Transport">Transport</option>
@@ -89,9 +86,7 @@ export default function TransactionsPage({
 
           <button
             type="submit"
-            className={`primary-button ${
-              editingId !== null ? "edit-mode" : ""
-            }`}
+            className={`primary-button ${editingId !== null ? "edit-mode" : ""}`}
             disabled={isSavingTransaction}
           >
             {isSavingTransaction
@@ -129,6 +124,7 @@ export default function TransactionsPage({
             type="button"
             className="secondary-button"
             onClick={exportTransactionsCSV}
+            disabled={isLoading}
           >
             Export CSV
           </button>
@@ -145,6 +141,7 @@ export default function TransactionsPage({
             className="filter-select"
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
+            disabled={isLoading}
           >
             <option value="All">All Categories</option>
             <option value="Shopping">Shopping</option>
@@ -160,6 +157,7 @@ export default function TransactionsPage({
             placeholder="Search merchant..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
+            disabled={isLoading}
           />
         </div>
 
