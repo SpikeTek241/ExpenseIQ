@@ -14,9 +14,11 @@ type TransactionsPageProps = {
   searchQuery: string;
   setSearchQuery: React.Dispatch<React.SetStateAction<string>>;
   isSavingTransaction: boolean;
+  isLoading: boolean;
   addTransaction: (e: React.FormEvent) => Promise<void>;
   seedDemoTransactions: () => Promise<void>;
-  filteredTransactions: Transaction[];
+  exportTransactionsCSV: () => void;
+  filteredTransactions?: Transaction[];
   startEditing: (transaction: Transaction) => void;
   deleteTransaction: (id: number) => Promise<void>;
 };
@@ -35,9 +37,11 @@ export default function TransactionsPage({
   searchQuery,
   setSearchQuery,
   isSavingTransaction,
+  isLoading,
   addTransaction,
   seedDemoTransactions,
-  filteredTransactions,
+  exportTransactionsCSV,
+  filteredTransactions = [],
   startEditing,
   deleteTransaction,
 }: TransactionsPageProps) {
@@ -120,6 +124,14 @@ export default function TransactionsPage({
           >
             Add Demo Transactions
           </button>
+
+          <button
+            type="button"
+            className="secondary-button"
+            onClick={exportTransactionsCSV}
+          >
+            Export CSV
+          </button>
         </form>
       </div>
 
@@ -151,7 +163,9 @@ export default function TransactionsPage({
           />
         </div>
 
-        {filteredTransactions.length === 0 ? (
+        {isLoading ? (
+          <p className="empty-state">Loading transactions...</p>
+        ) : filteredTransactions.length === 0 ? (
           <p className="empty-state">No transactions found.</p>
         ) : (
           <div className="transactions-list">
@@ -164,6 +178,7 @@ export default function TransactionsPage({
 
                 <div className="transaction-actions">
                   <p className="amount">${t.amount.toFixed(2)}</p>
+
                   <button
                     type="button"
                     className="edit-button"
@@ -171,6 +186,7 @@ export default function TransactionsPage({
                   >
                     Edit
                   </button>
+
                   <button
                     type="button"
                     className="delete-button"

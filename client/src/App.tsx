@@ -46,6 +46,9 @@ function App() {
   const [isSavingTransaction, setIsSavingTransaction] = useState(false);
   const [isSavingBudget, setIsSavingBudget] = useState(false);
   const [dateRange, setDateRange] = useState<DateRange>("all");
+  const [isLoadingTransactions, setIsLoadingTransactions] = useState(false);
+  const [isLoadingBudgets, setIsLoadingBudgets] = useState(false);
+  const [isLoadingInsights, setIsLoadingInsights] = useState(false);
 
   const authHeaders = () => ({
     "Content-Type": "application/json",
@@ -78,6 +81,8 @@ function App() {
     if (!token) return;
 
     try {
+      setIsLoadingTransactions(true);
+
       const res = await fetch(`${API_BASE}/api/transactions`, {
         headers: authHeaders(),
       });
@@ -97,6 +102,8 @@ function App() {
     } catch (error) {
       console.error("Failed to fetch transactions:", error);
       setTransactions([]);
+    } finally {
+      setIsLoadingTransactions(false);
     }
   };
 
@@ -104,6 +111,8 @@ function App() {
     if (!token) return;
 
     try {
+        setIsLoadingBudgets(true);
+
       const res = await fetch(`${API_BASE}/api/budgets`, {
         headers: authHeaders(),
       });
@@ -123,6 +132,8 @@ function App() {
     } catch (error) {
       console.error("Failed to fetch budgets:", error);
       setBudgets([]);
+    } finally {
+        setIsLoadingBudgets(false);
     }
   };
 
@@ -130,6 +141,8 @@ function App() {
     if (!token) return;
 
     try {
+      setIsLoadingInsights(true);
+
       const res = await fetch(`${API_BASE}/api/insights`, {
         headers: authHeaders(),
       });
@@ -151,6 +164,8 @@ function App() {
     } catch (error) {
       console.error("Failed to fetch insights:", error);
       setInsights([]);
+    } finally {
+      setIsLoadingInsights(false);
     }
   };
 
@@ -333,6 +348,31 @@ function App() {
     } finally {
       setIsSavingTransaction(false);
     }
+  };
+
+  const exportTransactionsCSV = () => {
+    if (transactions.length === 0) return;
+
+    const headers = ["Merchant", "Amount", "Category", "Date"];
+
+    const rows = transactions.map((t) => [
+      t.merchant,
+      t.amount,
+      t.category,
+      new Date(t.createdAt).toISOString().split("T")[0],
+    ]);
+
+    const csv = [headers, ...rows].map((r) => r.join(",")).join("\n");
+
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "transactions.csv";
+    a.click();
+
+    URL.revokeObjectURL(url);
   };
 
   const deleteTransaction = async (id: number) => {
@@ -607,9 +647,11 @@ function App() {
               searchQuery={searchQuery}
               setSearchQuery={setSearchQuery}
               isSavingTransaction={isSavingTransaction}
+              isLoading={isLoadingTransactions}
               addTransaction={addTransaction}
               seedDemoTransactions={seedDemoTransactions}
-              filteredTransactions={filteredTransactions}
+              exportTransactionsCSV={exportTransactionsCSV}
+              filteredTransactions= {filteredTransactions}
               startEditing={startEditing}
               deleteTransaction={deleteTransaction}
             />
@@ -627,6 +669,7 @@ function App() {
               dateRange={dateRange}
               setDateRange={setDateRange}
               analyticsInsights={analyticsInsights}
+              isLoading={isLoadingTransactions}
             />
           }
         />

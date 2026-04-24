@@ -667,3 +667,18 @@ img {
   border-color: rgba(59, 130, 246, 0.35);
 }
 
+.secondary-button {
+  margin-top: 10px;
+  background: transparent;
+  border: 1px solid #3b82f6;
+  color: #3b82f6;
+  padding: 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.secondary-button:hover {
+  background: #3b82f6;
+  color: white;
+}
