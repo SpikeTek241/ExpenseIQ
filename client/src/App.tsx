@@ -16,6 +16,8 @@ type User = {
   email: string;
 };
 
+type DateRange = "7d" | "30d" | "all";
+
 function App() {
   const [token, setToken] = useState<string | null>(
     localStorage.getItem("token")
@@ -43,7 +45,7 @@ function App() {
   const [insights, setInsights] = useState<Insight[]>([]);
   const [isSavingTransaction, setIsSavingTransaction] = useState(false);
   const [isSavingBudget, setIsSavingBudget] = useState(false);
-  const [dateRange, setDateRange] = useState<"7d" | "30d" | "all">("all");
+  const [dateRange, setDateRange] = useState<DateRange>("all");
 
   const authHeaders = () => ({
     "Content-Type": "application/json",
@@ -156,11 +158,7 @@ function App() {
     if (!token) return;
 
     const loadAll = async () => {
-      await Promise.all([
-        fetchTransactions(),
-        fetchBudgets(),
-        fetchInsights(),
-      ]);
+      await Promise.all([fetchTransactions(), fetchBudgets(), fetchInsights()]);
     };
 
     void loadAll();
@@ -278,6 +276,65 @@ function App() {
     }
   };
 
+  const seedDemoTransactions = async () => {
+    if (isSavingTransaction) return;
+
+    const now = new Date();
+
+    const demoTransactions = [
+      { merchant: "Publix", amount: 42.35, category: "Food", daysAgo: 1 },
+      { merchant: "Shell", amount: 38.2, category: "Transport", daysAgo: 2 },
+      { merchant: "Amazon", amount: 86.99, category: "Shopping", daysAgo: 3 },
+      {
+        merchant: "Netflix",
+        amount: 15.49,
+        category: "Entertainment",
+        daysAgo: 5,
+      },
+      { merchant: "FPL", amount: 126.75, category: "Bills", daysAgo: 7 },
+    ];
+
+    try {
+      setIsSavingTransaction(true);
+
+      for (const transaction of demoTransactions) {
+        const date = new Date(now);
+        date.setDate(now.getDate() - transaction.daysAgo);
+
+        const res = await fetch(`${API_BASE}/api/transactions`, {
+          method: "POST",
+          headers: authHeaders(),
+          body: JSON.stringify({
+            merchant: transaction.merchant,
+            amount: transaction.amount,
+            category: transaction.category,
+            createdAt: date.toISOString(),
+          }),
+        });
+
+        if (res.status === 401) {
+          handleUnauthorized();
+          return;
+        }
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          throw new Error(data.error || "Failed to seed demo transaction");
+        }
+      }
+
+      await fetchTransactions();
+      await fetchInsights();
+      await fetchBudgets();
+    } catch (error) {
+      console.error("Failed to seed demo transactions:", error);
+      alert(error instanceof Error ? error.message : "Demo seed failed");
+    } finally {
+      setIsSavingTransaction(false);
+    }
+  };
+
   const deleteTransaction = async (id: number) => {
     try {
       const res = await fetch(`${API_BASE}/api/transactions/${id}`, {
@@ -314,7 +371,7 @@ function App() {
   };
 
   const totalSpent = useMemo(() => {
-    return transactions.reduce((sum, t) => sum + t.amount, 0);
+    return transactions.reduce((sum, transaction) => sum + transaction.amount, 0);
   }, [transactions]);
 
   const budgetAmount = useMemo(() => {
@@ -393,32 +450,44 @@ function App() {
     const totalsByDate: Record<string, number> = {};
 
     for (const transaction of analyticsTransactions) {
-      const date = new Date(transaction.createdAt).toLocaleDateString();
+      const date = new Date(transaction.createdAt).toISOString().split("T")[0];
+
       totalsByDate[date] = (totalsByDate[date] || 0) + transaction.amount;
     }
 
-    return Object.entries(totalsByDate).map(([date, amount]) => ({
-      date,
-      amount: Number(amount.toFixed(2)),
-    }));
+    return Object.entries(totalsByDate)
+      .map(([date, amount]) => ({
+        date,
+        amount: Number(amount.toFixed(2)),
+      }))
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
   }, [analyticsTransactions]);
 
   const cumulativeTrendData = useMemo(() => {
     let runningTotal = 0;
+    const groupedByDate: Record<string, number> = {};
 
-    const sorted = [...analyticsTransactions].sort(
-      (a, b) =>
-        new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-    );
+    for (const transaction of analyticsTransactions) {
+      const date = new Date(transaction.createdAt).toISOString().split("T")[0];
 
-    return sorted.map((transaction) => {
-      runningTotal += transaction.amount;
+      groupedByDate[date] =
+        (groupedByDate[date] || 0) + transaction.amount;
+    }
 
-      return {
-        date: new Date(transaction.createdAt).toLocaleDateString(),
-        total: Number(runningTotal.toFixed(2)),
-      };
-    });
+    return Object.entries(groupedByDate)
+      .map(([date, amount]) => ({
+        date,
+        amount,
+      }))
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+      .map((item) => {
+        runningTotal += item.amount;
+
+        return {
+          date: item.date,
+          total: Number(runningTotal.toFixed(2)),
+        };
+      });
   }, [analyticsTransactions]);
 
   const categoryPercentages = useMemo(() => {
@@ -457,7 +526,8 @@ function App() {
     const totalsByDate: Record<string, number> = {};
 
     for (const transaction of analyticsTransactions) {
-      const date = new Date(transaction.createdAt).toLocaleDateString();
+      const date = new Date(transaction.createdAt).toISOString().split("T")[0];
+
       totalsByDate[date] =
         (totalsByDate[date] || 0) + transaction.amount;
     }
@@ -538,6 +608,7 @@ function App() {
               setSearchQuery={setSearchQuery}
               isSavingTransaction={isSavingTransaction}
               addTransaction={addTransaction}
+              seedDemoTransactions={seedDemoTransactions}
               filteredTransactions={filteredTransactions}
               startEditing={startEditing}
               deleteTransaction={deleteTransaction}

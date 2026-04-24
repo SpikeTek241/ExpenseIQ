@@ -15,6 +15,7 @@ type TransactionsPageProps = {
   setSearchQuery: React.Dispatch<React.SetStateAction<string>>;
   isSavingTransaction: boolean;
   addTransaction: (e: React.FormEvent) => Promise<void>;
+  seedDemoTransactions: () => Promise<void>;
   filteredTransactions: Transaction[];
   startEditing: (transaction: Transaction) => void;
   deleteTransaction: (id: number) => Promise<void>;
@@ -35,6 +36,7 @@ export default function TransactionsPage({
   setSearchQuery,
   isSavingTransaction,
   addTransaction,
+  seedDemoTransactions,
   filteredTransactions,
   startEditing,
   deleteTransaction,
@@ -83,7 +85,9 @@ export default function TransactionsPage({
 
           <button
             type="submit"
-            className={`primary-button ${editingId !== null ? "edit-mode" : ""}`}
+            className={`primary-button ${
+              editingId !== null ? "edit-mode" : ""
+            }`}
             disabled={isSavingTransaction}
           >
             {isSavingTransaction
@@ -107,6 +111,15 @@ export default function TransactionsPage({
               Cancel
             </button>
           )}
+
+          <button
+            type="button"
+            className="cancel-button"
+            onClick={seedDemoTransactions}
+            disabled={isSavingTransaction}
+          >
+            Add Demo Transactions
+          </button>
         </form>
       </div>
 

@@ -17,6 +17,7 @@ app.use(
     allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
+
 app.use(express.json());
 
 app.get("/api/health", (_req, res) => {
@@ -47,7 +48,7 @@ app.get("/api/transactions", authenticate, async (req: AuthRequest, res: Respons
 app.post("/api/transactions", authenticate, async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user?.userId;
-    const { merchant, amount, category } = req.body ?? {};
+    const { merchant, amount, category, createdAt } = req.body ?? {};
 
     if (!userId) {
       res.status(401).json({ error: "Unauthorized" });
@@ -67,6 +68,7 @@ app.post("/api/transactions", authenticate, async (req: AuthRequest, res: Respon
         amount: Number(amount),
         category,
         userId,
+        createdAt: createdAt ? new Date(createdAt) : new Date(),
       },
     });
 
@@ -91,11 +93,15 @@ app.put(
         return;
       }
 
+      if (!merchant || amount === undefined || !category) {
+        res.status(400).json({
+          error: "merchant, amount, and category are required",
+        });
+        return;
+      }
+
       const existingTransaction = await prisma.transaction.findFirst({
-        where: {
-          id,
-          userId,
-        },
+        where: { id, userId },
       });
 
       if (!existingTransaction) {
@@ -134,10 +140,7 @@ app.delete(
       }
 
       const existingTransaction = await prisma.transaction.findFirst({
-        where: {
-          id,
-          userId,
-        },
+        where: { id, userId },
       });
 
       if (!existingTransaction) {
@@ -268,7 +271,8 @@ app.get("/api/insights", authenticate, async (req: AuthRequest, res: Response) =
         insights: [
           {
             type: "positive",
-            message: "No transactions yet. Add a few expenses to unlock smarter insights.",
+            message:
+              "No transactions yet. Add a few expenses to unlock smarter insights.",
           },
         ],
       });
@@ -278,6 +282,7 @@ app.get("/api/insights", authenticate, async (req: AuthRequest, res: Response) =
     const totalSpent = transactions.reduce((sum, t) => sum + t.amount, 0);
 
     const categoryTotals: Record<string, number> = {};
+
     for (const transaction of transactions) {
       categoryTotals[transaction.category] =
         (categoryTotals[transaction.category] || 0) + transaction.amount;
@@ -289,23 +294,23 @@ app.get("/api/insights", authenticate, async (req: AuthRequest, res: Response) =
 
     const [topCategoryName, topCategoryAmount] = sortedCategories[0];
 
-    const largestExpense = transactions.reduce((max, t) =>
-      t.amount > max.amount ? t : max
+    const largestExpense = transactions.reduce((max, transaction) =>
+      transaction.amount > max.amount ? transaction : max
     );
 
     const now = new Date();
     const today = now.getDate();
+
     const daysInMonth = new Date(
       now.getFullYear(),
       now.getMonth() + 1,
       0
     ).getDate();
-    const daysLeft = Math.max(daysInMonth - today, 0);
 
+    const daysLeft = Math.max(daysInMonth - today, 0);
     const dailyAverage = totalSpent / Math.max(today, 1);
     const projectedSpend = dailyAverage * daysInMonth;
 
-    // Budget insight
     if (budget && budget.limit > 0) {
       const percentUsed = (totalSpent / budget.limit) * 100;
 
@@ -329,8 +334,8 @@ app.get("/api/insights", authenticate, async (req: AuthRequest, res: Response) =
       });
     }
 
-    // Top category
     const topCategoryPercent = (topCategoryAmount / totalSpent) * 100;
+
     insights.push({
       type: "warning",
       message: `${topCategoryName} is your largest spending category at $${topCategoryAmount.toFixed(
@@ -338,7 +343,6 @@ app.get("/api/insights", authenticate, async (req: AuthRequest, res: Response) =
       )} (${topCategoryPercent.toFixed(1)}% of total spending).`,
     });
 
-    // Largest purchase
     insights.push({
       type: "positive",
       message: `Your largest purchase was $${largestExpense.amount.toFixed(
@@ -346,27 +350,25 @@ app.get("/api/insights", authenticate, async (req: AuthRequest, res: Response) =
       )} at ${largestExpense.merchant}.`,
     });
 
-    // Projection
     let projectionType: "positive" | "warning" | "danger" = "positive";
 
     if (budget && budget.limit > 0) {
       const projectedPercent = (projectedSpend / budget.limit) * 100;
 
-    if (projectedPercent > 100) {
-     projectionType = "danger";
-   } else if (projectedPercent >= 80) {
-     projectionType = "warning";
-  }
-}
+      if (projectedPercent > 100) {
+        projectionType = "danger";
+      } else if (projectedPercent >= 80) {
+        projectionType = "warning";
+      }
+    }
 
-  insights.push({
-    type: projectionType,
-    message: `At your current pace, you’re projected to spend $${projectedSpend.toFixed(
-      2
-    )} by month-end.`,
-  });
+    insights.push({
+      type: projectionType,
+      message: `At your current pace, you’re projected to spend $${projectedSpend.toFixed(
+        2
+      )} by month-end.`,
+    });
 
-    // Budget trajectory
     if (budget && budget.limit > 0) {
       if (projectedSpend > budget.limit) {
         insights.push({
@@ -393,7 +395,7 @@ app.get("/api/insights", authenticate, async (req: AuthRequest, res: Response) =
 
         if (percentUsed >= 60) {
           insights.push({
-            type: percentUsed >= 80 ? "danger" : "positive",
+            type: percentUsed >= 80 ? "danger" : "warning",
             message: `To stay on budget, keep daily spending around $${safeDailySpend.toFixed(
               2
             )} for the rest of the month.`,
@@ -401,7 +403,8 @@ app.get("/api/insights", authenticate, async (req: AuthRequest, res: Response) =
         } else {
           insights.push({
             type: "positive",
-            message: "You still have plenty of room in your budget this month.",
+            message:
+              "You still have plenty of room in your budget this month.",
           });
         }
       }
