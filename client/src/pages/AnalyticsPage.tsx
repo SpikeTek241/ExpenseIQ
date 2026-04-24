@@ -1,3 +1,4 @@
+import type { Dispatch, SetStateAction } from "react";
 import {
   BarChart,
   Bar,
@@ -10,13 +11,16 @@ import {
   Line,
 } from "recharts";
 
+type DateRange = "7d" | "30d" | "all";
+
 type AnalyticsPageProps = {
   categoryChartData: { category: string; total: number }[];
   trendData: { date: string; amount: number }[];
   cumulativeTrendData: { date: string; total: number }[];
   categoryPercentages: { category: string; percent: number }[];
-  dateRange: "7d" | "30d" | "all";
-  setDateRange: React.Dispatch<React.SetStateAction<"7d" | "30d" | "all">>;
+  dateRange: DateRange;
+  setDateRange: Dispatch<SetStateAction<DateRange>>;
+  analyticsInsights: string[];
 };
 
 export default function AnalyticsPage({
@@ -26,6 +30,7 @@ export default function AnalyticsPage({
   categoryPercentages,
   dateRange,
   setDateRange,
+  analyticsInsights,
 }: AnalyticsPageProps) {
   return (
     <>
@@ -42,6 +47,7 @@ export default function AnalyticsPage({
           >
             Last 7 Days
           </button>
+
           <button
             type="button"
             className={`filter-chip ${dateRange === "30d" ? "active" : ""}`}
@@ -49,6 +55,7 @@ export default function AnalyticsPage({
           >
             Last 30 Days
           </button>
+
           <button
             type="button"
             className={`filter-chip ${dateRange === "all" ? "active" : ""}`}
@@ -56,6 +63,21 @@ export default function AnalyticsPage({
           >
             All Time
           </button>
+        </div>
+      </section>
+
+      <section className="card">
+        <div className="section-header">
+          <h3>Smart Analytics Insights</h3>
+        </div>
+
+        <div className="insight-list">
+          {analyticsInsights.map((insight, index) => (
+            <div key={index} className="insight-item positive">
+              <span className="insight-icon">🧠</span>
+              <p>{insight}</p>
+            </div>
+          ))}
         </div>
       </section>
 

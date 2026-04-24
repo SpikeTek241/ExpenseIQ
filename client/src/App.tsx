@@ -366,10 +366,9 @@ function App() {
   const analyticsTransactions = useMemo(() => {
     if (dateRange === "all") return transactions;
 
-    const now = new Date();
     const days = dateRange === "7d" ? 7 : 30;
     const cutoff = new Date();
-    cutoff.setDate(now.getDate() - days);
+    cutoff.setDate(cutoff.getDate() - days);
 
     return transactions.filter(
       (transaction) => new Date(transaction.createdAt) >= cutoff
@@ -412,11 +411,11 @@ function App() {
         new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
     );
 
-    return sorted.map((t) => {
-      runningTotal += t.amount;
+    return sorted.map((transaction) => {
+      runningTotal += transaction.amount;
 
       return {
-        date: new Date(t.createdAt).toLocaleDateString(),
+        date: new Date(transaction.createdAt).toLocaleDateString(),
         total: Number(runningTotal.toFixed(2)),
       };
     });
@@ -425,17 +424,65 @@ function App() {
   const categoryPercentages = useMemo(() => {
     const totals: Record<string, number> = {};
 
-    for (const t of analyticsTransactions) {
-      totals[t.category] = (totals[t.category] || 0) + t.amount;
+    for (const transaction of analyticsTransactions) {
+      totals[transaction.category] =
+        (totals[transaction.category] || 0) + transaction.amount;
     }
 
-    const total = analyticsTransactions.reduce((sum, t) => sum + t.amount, 0);
+    const total = analyticsTransactions.reduce(
+      (sum, transaction) => sum + transaction.amount,
+      0
+    );
 
     return Object.entries(totals).map(([category, amount]) => ({
       category,
       percent: total ? Number(((amount / total) * 100).toFixed(1)) : 0,
     }));
   }, [analyticsTransactions]);
+
+  const analyticsInsights = useMemo(() => {
+    if (analyticsTransactions.length === 0) {
+      return ["No transactions found for this selected date range."];
+    }
+
+    const total = analyticsTransactions.reduce(
+      (sum, transaction) => sum + transaction.amount,
+      0
+    );
+
+    const highestTransaction = [...analyticsTransactions].sort(
+      (a, b) => b.amount - a.amount
+    )[0];
+
+    const totalsByDate: Record<string, number> = {};
+
+    for (const transaction of analyticsTransactions) {
+      const date = new Date(transaction.createdAt).toLocaleDateString();
+      totalsByDate[date] =
+        (totalsByDate[date] || 0) + transaction.amount;
+    }
+
+    const highestDay = Object.entries(totalsByDate).sort(
+      (a, b) => b[1] - a[1]
+    )[0];
+
+    const rangeLabel =
+      dateRange === "7d"
+        ? "the last 7 days"
+        : dateRange === "30d"
+        ? "the last 30 days"
+        : "all time";
+
+    return [
+      `You spent $${total.toFixed(2)} during ${rangeLabel}.`,
+      `Your largest transaction was $${highestTransaction.amount.toFixed(
+        2
+      )} at ${highestTransaction.merchant}.`,
+      `Your highest spending day was ${highestDay[0]} with $${highestDay[1].toFixed(
+        2
+      )}.`,
+    ];
+  }, [analyticsTransactions, dateRange]);
 
   if (!token || !user) {
     return <LoginForm onLoginSuccess={handleLoginSuccess} />;
@@ -451,6 +498,7 @@ function App() {
         }
       >
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
+
         <Route
           path="/dashboard"
           element={
@@ -471,6 +519,7 @@ function App() {
             />
           }
         />
+
         <Route
           path="/transactions"
           element={
@@ -495,6 +544,7 @@ function App() {
             />
           }
         />
+
         <Route
           path="/analytics"
           element={
@@ -505,6 +555,7 @@ function App() {
               categoryPercentages={categoryPercentages}
               dateRange={dateRange}
               setDateRange={setDateRange}
+              analyticsInsights={analyticsInsights}
             />
           }
         />
