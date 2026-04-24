@@ -376,6 +376,12 @@ function App() {
   };
 
   const deleteTransaction = async (id: number) => {
+    const confirmDelete = window.confirm(
+      "Are you sure you want to delete this transaction?"
+    );
+
+    if (!confirmDelete) return;
+    
     try {
       const res = await fetch(`${API_BASE}/api/transactions/${id}`, {
         method: "DELETE",
