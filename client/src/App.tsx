@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { Navigate, Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes, useLocation } from "react-router-dom";
+import toast from "react-hot-toast";
 import "./App.css";
 import type { Budget, Transaction, InsightsResponse, Insight } from "./types";
 import LoginForm from "./components/LoginForm";
@@ -19,6 +20,8 @@ type User = {
 type DateRange = "7d" | "30d" | "all";
 
 function App() {
+  const location = useLocation();
+
   const [token, setToken] = useState<string | null>(
     localStorage.getItem("token")
   );
@@ -39,15 +42,22 @@ function App() {
   const [category, setCategory] = useState("Shopping");
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
+  const [sortOption, setSortOption] = useState("newest");
   const [editingId, setEditingId] = useState<number | null>(null);
+
   const [monthlyBudget, setMonthlyBudget] = useState<number | "">("");
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [insights, setInsights] = useState<Insight[]>([]);
+
   const [isSavingTransaction, setIsSavingTransaction] = useState(false);
   const [isSavingBudget, setIsSavingBudget] = useState(false);
-  const [dateRange, setDateRange] = useState<DateRange>("all");
   const [isLoadingTransactions, setIsLoadingTransactions] = useState(false);
-  const [sortOption, setSortOption] = useState("newest");
+
+  const [dateRange, setDateRange] = useState<DateRange>("all");
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [location.pathname]);
 
   const authHeaders = () => ({
     "Content-Type": "application/json",
@@ -70,7 +80,7 @@ function App() {
     setTransactions([]);
     setBudgets([]);
     setInsights([]);
-    alert("Session expired. Please log in again.");
+    toast.error("Session expired. Please log in again.");
   };
 
   const handleLogout = () => {
@@ -102,7 +112,7 @@ function App() {
     } catch (error) {
       console.error("Failed to fetch transactions:", error);
       setTransactions([]);
-      alert("Failed to load transactions.");
+      toast.error("Failed to load transactions.");
     } finally {
       setIsLoadingTransactions(false);
     }
@@ -131,7 +141,7 @@ function App() {
     } catch (error) {
       console.error("Failed to fetch budgets:", error);
       setBudgets([]);
-      alert("Failed to load budgets.");
+      toast.error("Failed to load budgets.");
     }
   };
 
@@ -160,7 +170,7 @@ function App() {
     } catch (error) {
       console.error("Failed to fetch insights:", error);
       setInsights([]);
-      alert("Failed to load insights.");
+      toast.error("Failed to load insights.");
     }
   };
 
@@ -190,7 +200,7 @@ function App() {
 
   const saveBudget = async () => {
     if (monthlyBudget === "" || Number(monthlyBudget) <= 0 || isSavingBudget) {
-      alert("Please enter a valid monthly budget.");
+      toast.error("Please enter a valid monthly budget.");
       return;
     }
 
@@ -220,10 +230,11 @@ function App() {
 
       await fetchBudgets();
       await fetchInsights();
-      alert("Budget saved!");
+
+      toast.success("Budget saved!");
     } catch (error) {
       console.error("Failed to save budget:", error);
-      alert(error instanceof Error ? error.message : "Budget save failed");
+      toast.error(error instanceof Error ? error.message : "Budget save failed");
     } finally {
       setIsSavingBudget(false);
     }
@@ -233,19 +244,19 @@ function App() {
     e.preventDefault();
 
     if (!merchant.trim() || !amount || !category || isSavingTransaction) {
-      alert("Please fill in merchant, amount, and category.");
+      toast.error("Please fill in merchant, amount, and category.");
       return;
     }
 
-    const isDuplicate = 
+    const isDuplicate =
       editingId === null &&
       transactions.some((t) => {
-        const sameMerchant = 
-          t.merchant.toLowerCase() === merchant.trim().toLocaleLowerCase();
+        const sameMerchant =
+          t.merchant.toLowerCase() === merchant.trim().toLowerCase();
 
         const sameAmount = t.amount === Number(amount);
 
-        const sameDay = 
+        const sameDay =
           new Date(t.createdAt).toISOString().split("T")[0] ===
           new Date().toISOString().split("T")[0];
 
@@ -253,7 +264,7 @@ function App() {
       });
 
     if (isDuplicate) {
-      alert("This transaction already exists today.");
+      toast.error("This transaction already exists today.");
       return;
     }
 
@@ -288,7 +299,7 @@ function App() {
         throw new Error(data.error || "Failed to save transaction");
       }
 
-      alert(
+      toast.success(
         editingId !== null ? "Transaction updated!" : "Transaction added!"
       );
 
@@ -302,7 +313,7 @@ function App() {
       await fetchBudgets();
     } catch (error) {
       console.error("Failed to save transaction:", error);
-      alert(
+      toast.error(
         error instanceof Error
           ? error.message
           : "Transaction failed. Check the console."
@@ -364,10 +375,10 @@ function App() {
       await fetchInsights();
       await fetchBudgets();
 
-      alert("Demo transactions added!");
+      toast.success("Demo transactions added!");
     } catch (error) {
       console.error("Failed to seed demo transactions:", error);
-      alert(error instanceof Error ? error.message : "Demo seed failed");
+      toast.error(error instanceof Error ? error.message : "Demo seed failed");
     } finally {
       setIsSavingTransaction(false);
     }
@@ -375,7 +386,7 @@ function App() {
 
   const exportTransactionsCSV = () => {
     if (transactions.length === 0) {
-      alert("No transactions to export.");
+      toast.error("No transactions to export.");
       return;
     }
 
@@ -402,7 +413,7 @@ function App() {
 
     URL.revokeObjectURL(url);
 
-    alert("CSV exported!");
+    toast.success("CSV exported!");
   };
 
   const deleteTransaction = async (id: number) => {
@@ -433,10 +444,10 @@ function App() {
       await fetchInsights();
       await fetchBudgets();
 
-      alert("Transaction deleted.");
+      toast.success("Transaction deleted.");
     } catch (error) {
       console.error("Failed to delete transaction:", error);
-      alert(error instanceof Error ? error.message : "Delete failed");
+      toast.error(error instanceof Error ? error.message : "Delete failed");
     }
   };
 
@@ -489,7 +500,7 @@ function App() {
   }, [transactions]);
 
   const filteredTransactions = useMemo(() => {
-    let result = transactions.filter((transaction) => {
+    const result = transactions.filter((transaction) => {
       const matchesCategory =
         selectedCategory === "All" || transaction.category === selectedCategory;
 
@@ -498,7 +509,7 @@ function App() {
         .includes(searchQuery.toLowerCase());
 
       return matchesCategory && matchesSearch;
-   });
+    });
 
     switch (sortOption) {
       case "newest":
@@ -506,25 +517,25 @@ function App() {
           (a, b) =>
             new Date(b.createdAt).getTime() -
             new Date(a.createdAt).getTime()
-         );
-      break;
-    case "oldest":
-      result.sort(
-        (a, b) =>
-          new Date(a.createdAt).getTime() -
-          new Date(b.createdAt).getTime()
-      );
-      break;
-    case "highest":
-      result.sort((a, b) => b.amount - a.amount);
-      break;
-    case "lowest":
-      result.sort((a, b) => a.amount - b.amount);
-      break;
-  }
+        );
+        break;
+      case "oldest":
+        result.sort(
+          (a, b) =>
+            new Date(a.createdAt).getTime() -
+            new Date(b.createdAt).getTime()
+        );
+        break;
+      case "highest":
+        result.sort((a, b) => b.amount - a.amount);
+        break;
+      case "lowest":
+        result.sort((a, b) => a.amount - b.amount);
+        break;
+    }
 
-  return result;
-}, [transactions, selectedCategory, searchQuery, sortOption]);
+    return result;
+  }, [transactions, selectedCategory, searchQuery, sortOption]);
 
   const analyticsTransactions = useMemo(() => {
     if (dateRange === "all") return transactions;
@@ -574,6 +585,7 @@ function App() {
 
     for (const transaction of analyticsTransactions) {
       const date = new Date(transaction.createdAt).toISOString().split("T")[0];
+
       groupedByDate[date] =
         (groupedByDate[date] || 0) + transaction.amount;
     }
