@@ -1,4 +1,3 @@
-import logo from "../assets/logoiq.png";
 import type { Insight, Transaction } from "../types";
 
 type DashboardPageProps = {
@@ -34,137 +33,136 @@ export default function DashboardPage({
 }: DashboardPageProps) {
   return (
     <>
-      <section className="hero">
-        <div className="hero-content">
-          <img src={logo} alt="ExpenseIQ logo" className="hero-logo" />
-          <p className="eyebrow">Finance Dashboard</p>
-          <h1>ExpenseIQ</h1>
-          <p className="subtext">
-            Smart expense intelligence for tracking, reviewing, and improving
-            spending habits.
-          </p>
-          <p className="subtext">Signed in as {userEmail}</p>
-        </div>
+      <section className="dashboard-hero">
+        <p className="eyebrow">Finance Dashboard</p>
+        <h1>ExpenseIQ</h1>
+        <p className="hero-subtitle">
+          Track spending, monitor budgets, and uncover smarter financial
+          insights.
+        </p>
+        <p className="signed-in-text">Signed in as {userEmail}</p>
       </section>
 
-      <section className="summary-grid">
-        <div className="card summary-card">
-          <p className="card-label">Total Spent</p>
-          <h2>${totalSpent.toFixed(2)}</h2>
+      <section className="stats-grid">
+        <div className="stat-card">
+          <p className="stat-label">Total Spent</p>
+          <h2 className="stat-value">${totalSpent.toFixed(2)}</h2>
+          <p className="stat-sub">This month</p>
         </div>
 
-        <div className="card summary-card">
-          <p className="card-label">Transactions</p>
-          <h2>{transactions.length}</h2>
+        <div className="stat-card">
+          <p className="stat-label">Transactions</p>
+          <h2 className="stat-value">{transactions.length}</h2>
+          <p className="stat-sub">Recorded</p>
         </div>
 
-        <div className="card summary-card">
-          <p className="card-label">Top Category</p>
-          <h2>{topCategory}</h2>
+        <div className="stat-card">
+          <p className="stat-label">Top Category</p>
+          <h2 className="stat-value">{topCategory}</h2>
+          <p className="stat-sub">Highest spend</p>
         </div>
       </section>
 
       <section className="card budget-card">
-        <div className="section-header">
-          <h3>Monthly Budget</h3>
-        </div>
+        <h3>Monthly Budget</h3>
 
         <div className="budget-grid">
-          <div className="budget-input-side">
-            <label className="budget-input-group">
-              Set Budget
-              <input
-                type="number"
-                step="0.01"
-                placeholder="Enter monthly budget"
-                value={monthlyBudget}
-                onChange={(e) =>
-                  setMonthlyBudget(
-                    e.target.value === "" ? "" : Number(e.target.value)
-                  )
-                }
-              />
-            </label>
+          <div className="budget-input-section">
+            <label className="budget-label">Set Monthly Budget</label>
+
+            <input
+              className="budget-input"
+              type="number"
+              min="0"
+              step="0.01"
+              value={monthlyBudget}
+              onChange={(e) =>
+                setMonthlyBudget(
+                  e.target.value === "" ? "" : Number(e.target.value)
+                )
+              }
+            />
 
             <button
               type="button"
-              className="primary-button"
+              className="primary-button budget-button"
               onClick={saveBudget}
               disabled={isSavingBudget}
             >
-              {isSavingBudget ? "Saving Budget..." : "Save Budget"}
+              {isSavingBudget ? "Saving..." : "Save Budget"}
             </button>
           </div>
 
           <div className="budget-stats">
-            <p>
-              Budget:{" "}
-              <strong>
-                {budgetAmount ? `$${budgetAmount.toFixed(2)}` : "Not set"}
-              </strong>
-            </p>
-            <p>
-              Spent: <strong>${totalSpent.toFixed(2)}</strong>
-            </p>
-            <p>
-              💶 Remaining:{" "}
-              <strong
-                style={{ color: remainingBudget < 0 ? "#ef4444" : "#22c55e" }}
-              >
+            <div className="budget-row">
+              <span>Budget</span>
+              <strong>${budgetAmount.toFixed(2)}</strong>
+            </div>
+
+            <div className="budget-row">
+              <span>Spent</span>
+              <strong>${totalSpent.toFixed(2)}</strong>
+            </div>
+
+            <div className="budget-row">
+              <span>Remaining</span>
+              <strong className={remainingBudget >= 0 ? "positive" : "danger"}>
                 ${remainingBudget.toFixed(2)}
               </strong>
-            </p>
-            <p>
-              Status: <strong>{budgetStatus}</strong>
-            </p>
+            </div>
+
+            <div className="budget-row">
+              <span>Status</span>
+              <strong>{budgetStatus}</strong>
+            </div>
           </div>
         </div>
 
-        <div className="budget-progress">
+        <div className="progress-track">
           <div
-            className={`budget-progress-bar ${
-              budgetStatus === "On track"
-                ? "green"
-                : budgetStatus === "Getting close"
-                ? "yellow"
-                : budgetStatus === "Over budget"
-                ? "red"
-                : ""
+            className={`progress-fill ${
+              budgetUsedPercent >= 100
+                ? "danger-fill"
+                : budgetUsedPercent >= 75
+                ? "warning-fill"
+                : "positive-fill"
             }`}
             style={{ width: `${budgetUsedPercent}%` }}
           />
         </div>
 
-        <p className="budget-percent">
-          {budgetAmount
-            ? `${budgetUsedPercent.toFixed(1)}% of monthly budget used`
-            : "Set a monthly budget to track progress"}
+        <p className="budget-caption">
+          {budgetUsedPercent.toFixed(1)}% of monthly budget used
         </p>
       </section>
 
-      <section className="card">
-        <div className="section-header">
-          <h3>AI Insights</h3>
-        </div>
+      <section className="card insights-card">
+        <p className="eyebrow">AI Insights</p>
+        <h3>Smart Financial Signals</h3>
 
-        <div className="insight-list">
-          {insights.length === 0 ? (
-            <p className="empty-state">
-              Add transactions and a monthly budget to unlock smarter insights.
-            </p>
-          ) : (
-            insights.map((insight, index) => (
-              <div key={index} className={`insight-item ${insight.type}`}>
-                <span className="insight-icon">
-                  {insight.type === "positive" && "🟢"}
-                  {insight.type === "warning" && "🟡"}
-                  {insight.type === "danger" && "🔴"}
-                </span>
+        {insights.length === 0 ? (
+          <p className="empty-state">
+            Add transactions and a monthly budget to unlock smarter insights.
+          </p>
+        ) : (
+          <div className="insight-list">
+            {insights.map((insight, index) => (
+              <div
+                key={index}
+                className={`insight-item ${
+                  insight.type === "danger"
+                    ? "danger"
+                    : insight.type === "warning"
+                    ? "warning"
+                    : "positive"
+                }`}
+              >
+                <span className="insight-dot" />
                 <p>{insight.message}</p>
               </div>
-            ))
-          )}
-        </div>
+            ))}
+          </div>
+        )}
       </section>
     </>
   );

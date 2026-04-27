@@ -47,6 +47,7 @@ function App() {
   const [isSavingBudget, setIsSavingBudget] = useState(false);
   const [dateRange, setDateRange] = useState<DateRange>("all");
   const [isLoadingTransactions, setIsLoadingTransactions] = useState(false);
+  const [sortOption, setSortOption] = useState("newest");
 
   const authHeaders = () => ({
     "Content-Type": "application/json",
@@ -69,6 +70,7 @@ function App() {
     setTransactions([]);
     setBudgets([]);
     setInsights([]);
+    alert("Session expired. Please log in again.");
   };
 
   const handleLogout = () => {
@@ -100,6 +102,7 @@ function App() {
     } catch (error) {
       console.error("Failed to fetch transactions:", error);
       setTransactions([]);
+      alert("Failed to load transactions.");
     } finally {
       setIsLoadingTransactions(false);
     }
@@ -128,6 +131,7 @@ function App() {
     } catch (error) {
       console.error("Failed to fetch budgets:", error);
       setBudgets([]);
+      alert("Failed to load budgets.");
     }
   };
 
@@ -156,6 +160,7 @@ function App() {
     } catch (error) {
       console.error("Failed to fetch insights:", error);
       setInsights([]);
+      alert("Failed to load insights.");
     }
   };
 
@@ -185,6 +190,7 @@ function App() {
 
   const saveBudget = async () => {
     if (monthlyBudget === "" || Number(monthlyBudget) <= 0 || isSavingBudget) {
+      alert("Please enter a valid monthly budget.");
       return;
     }
 
@@ -214,6 +220,7 @@ function App() {
 
       await fetchBudgets();
       await fetchInsights();
+      alert("Budget saved!");
     } catch (error) {
       console.error("Failed to save budget:", error);
       alert(error instanceof Error ? error.message : "Budget save failed");
@@ -227,6 +234,26 @@ function App() {
 
     if (!merchant.trim() || !amount || !category || isSavingTransaction) {
       alert("Please fill in merchant, amount, and category.");
+      return;
+    }
+
+    const isDuplicate = 
+      editingId === null &&
+      transactions.some((t) => {
+        const sameMerchant = 
+          t.merchant.toLowerCase() === merchant.trim().toLocaleLowerCase();
+
+        const sameAmount = t.amount === Number(amount);
+
+        const sameDay = 
+          new Date(t.createdAt).toISOString().split("T")[0] ===
+          new Date().toISOString().split("T")[0];
+
+        return sameMerchant && sameAmount && sameDay;
+      });
+
+    if (isDuplicate) {
+      alert("This transaction already exists today.");
       return;
     }
 
@@ -260,6 +287,10 @@ function App() {
       if (!res.ok) {
         throw new Error(data.error || "Failed to save transaction");
       }
+
+      alert(
+        editingId !== null ? "Transaction updated!" : "Transaction added!"
+      );
 
       setMerchant("");
       setAmount("");
@@ -332,6 +363,8 @@ function App() {
       await fetchTransactions();
       await fetchInsights();
       await fetchBudgets();
+
+      alert("Demo transactions added!");
     } catch (error) {
       console.error("Failed to seed demo transactions:", error);
       alert(error instanceof Error ? error.message : "Demo seed failed");
@@ -368,6 +401,8 @@ function App() {
     link.click();
 
     URL.revokeObjectURL(url);
+
+    alert("CSV exported!");
   };
 
   const deleteTransaction = async (id: number) => {
@@ -397,6 +432,8 @@ function App() {
       await fetchTransactions();
       await fetchInsights();
       await fetchBudgets();
+
+      alert("Transaction deleted.");
     } catch (error) {
       console.error("Failed to delete transaction:", error);
       alert(error instanceof Error ? error.message : "Delete failed");
@@ -452,7 +489,7 @@ function App() {
   }, [transactions]);
 
   const filteredTransactions = useMemo(() => {
-    return transactions.filter((transaction) => {
+    let result = transactions.filter((transaction) => {
       const matchesCategory =
         selectedCategory === "All" || transaction.category === selectedCategory;
 
@@ -461,8 +498,33 @@ function App() {
         .includes(searchQuery.toLowerCase());
 
       return matchesCategory && matchesSearch;
-    });
-  }, [transactions, selectedCategory, searchQuery]);
+   });
+
+    switch (sortOption) {
+      case "newest":
+        result.sort(
+          (a, b) =>
+            new Date(b.createdAt).getTime() -
+            new Date(a.createdAt).getTime()
+         );
+      break;
+    case "oldest":
+      result.sort(
+        (a, b) =>
+          new Date(a.createdAt).getTime() -
+          new Date(b.createdAt).getTime()
+      );
+      break;
+    case "highest":
+      result.sort((a, b) => b.amount - a.amount);
+      break;
+    case "lowest":
+      result.sort((a, b) => a.amount - b.amount);
+      break;
+  }
+
+  return result;
+}, [transactions, selectedCategory, searchQuery, sortOption]);
 
   const analyticsTransactions = useMemo(() => {
     if (dateRange === "all") return transactions;
@@ -512,7 +574,6 @@ function App() {
 
     for (const transaction of analyticsTransactions) {
       const date = new Date(transaction.createdAt).toISOString().split("T")[0];
-
       groupedByDate[date] =
         (groupedByDate[date] || 0) + transaction.amount;
     }
@@ -649,6 +710,8 @@ function App() {
               setSelectedCategory={setSelectedCategory}
               searchQuery={searchQuery}
               setSearchQuery={setSearchQuery}
+              sortOption={sortOption}
+              setSortOption={setSortOption}
               isSavingTransaction={isSavingTransaction}
               isLoading={isLoadingTransactions}
               addTransaction={addTransaction}

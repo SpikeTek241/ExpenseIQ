@@ -13,6 +13,8 @@ type TransactionsPageProps = {
   setSelectedCategory: React.Dispatch<React.SetStateAction<string>>;
   searchQuery: string;
   setSearchQuery: React.Dispatch<React.SetStateAction<string>>;
+  sortOption: string;
+  setSortOption: React.Dispatch<React.SetStateAction<string>>;
   isSavingTransaction: boolean;
   isLoading: boolean;
   addTransaction: (e: React.FormEvent) => Promise<void>;
@@ -36,6 +38,8 @@ export default function TransactionsPage({
   setSelectedCategory,
   searchQuery,
   setSearchQuery,
+  sortOption,
+  setSortOption,
   isSavingTransaction,
   isLoading,
   addTransaction,
@@ -75,7 +79,10 @@ export default function TransactionsPage({
 
           <label>
             Category
-            <select value={category} onChange={(e) => setCategory(e.target.value)}>
+            <select
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+            >
               <option value="Shopping">Shopping</option>
               <option value="Food">Food</option>
               <option value="Transport">Transport</option>
@@ -86,11 +93,13 @@ export default function TransactionsPage({
 
           <button
             type="submit"
-            className={`primary-button ${editingId !== null ? "edit-mode" : ""}`}
+            className={`primary-button ${
+              editingId !== null ? "edit-mode" : ""
+            }`}
             disabled={isSavingTransaction}
           >
             {isSavingTransaction
-              ? "Saving..."
+              ? "Processing..."
               : editingId !== null
               ? "Update Transaction"
               : "Add Transaction"}
@@ -151,6 +160,18 @@ export default function TransactionsPage({
             <option value="Entertainment">Entertainment</option>
           </select>
 
+          <select
+            className="filter-select"
+            value={sortOption}
+            onChange={(e) => setSortOption(e.target.value)}
+            disabled={isLoading}
+          >
+            <option value="newest">Newest</option>
+            <option value="oldest">Oldest</option>
+            <option value="highest">Highest Amount</option>
+            <option value="lowest">Lowest Amount</option>
+          </select>
+
           <input
             className="search-input"
             type="text"
@@ -164,7 +185,9 @@ export default function TransactionsPage({
         {isLoading ? (
           <p className="empty-state">Loading transactions...</p>
         ) : filteredTransactions.length === 0 ? (
-          <p className="empty-state">No transactions found.</p>
+          <p className="empty-state">
+            No transactions yet. Start by adding one 🚀
+          </p>
         ) : (
           <div className="transactions-list">
             {filteredTransactions.map((t) => (
