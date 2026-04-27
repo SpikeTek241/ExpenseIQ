@@ -1,4 +1,5 @@
-import { NavLink, Outlet } from "react-router-dom";
+import { NavLink, Outlet, Link } from "react-router-dom";
+import logo from "../assets/logoiq.png";
 
 type AppLayoutProps = {
   userEmail: string;
@@ -12,9 +13,14 @@ export default function AppLayout({
   return (
     <main className="dashboard">
       <header className="app-nav">
+        {/* LEFT SIDE */}
         <div className="app-nav-left">
-          <h2 className="app-nav-brand">ExpenseIQ</h2>
+          {/* BRAND */}
+          <Link to="/dashboard" className="app-nav-brand">
+            <img src={logo} alt="ExpenseIQ Logo" className="nav-logo" />
+          </Link>
 
+          {/* NAV LINKS */}
           <nav className="app-nav-links">
             <NavLink to="/dashboard">Dashboard</NavLink>
             <NavLink to="/transactions">Transactions</NavLink>
@@ -22,6 +28,7 @@ export default function AppLayout({
           </nav>
         </div>
 
+        {/* RIGHT SIDE */}
         <div className="app-nav-right">
           <span className="app-nav-user">{userEmail}</span>
           <button type="button" className="cancel-button" onClick={onLogout}>

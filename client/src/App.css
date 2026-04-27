@@ -1002,3 +1002,59 @@ img {
 .insight-item:hover {
   transform: translateY(-1px);
 }
+
+.app-nav-brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+
+.nav-logo {
+  width: 42px;
+  height: 42px;
+  object-fit: contain;
+  filter: drop-shadow(0 0 10px rgba(255, 215, 0, 0.25));
+  transition: transform 0.2s ease, filter 0.2s ease;
+}
+
+.app-nav-brand:hover .nav-logo {
+  transform: scale(1.08);
+  filter: drop-shadow(0 0 14px rgba(255, 215, 0, 0.45));
+}
+
+/* =========================
+   FINAL NAVBAR BRAND
+========================= */
+
+.app-nav-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+}
+
+.nav-logo {
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
+  filter: drop-shadow(0 0 6px rgba(255, 215, 0, 0.35));
+  transition: transform 0.2s ease, filter 0.2s ease;
+}
+
+.nav-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #f5f7fb;
+  transition: color 0.2s ease;
+}
+
+.app-nav-brand:hover .nav-logo {
+  transform: scale(1.08);
+  filter: drop-shadow(0 0 10px rgba(255, 215, 0, 0.5));
+}
+
+.app-nav-brand:hover .nav-title {
+  color: #93c5fd;
+}
