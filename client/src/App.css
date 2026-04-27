@@ -1058,3 +1058,50 @@ img {
 .app-nav-brand:hover .nav-title {
   color: #93c5fd;
 }
+
+/* =========================
+   PHASE 9: SKELETON LOADER
+========================= */
+
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background: rgba(148, 163, 184, 0.08);
+}
+
+.skeleton::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -150px;
+  width: 150px;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.08),
+    transparent
+  );
+  animation: shimmer 1.4s infinite;
+}
+
+@keyframes shimmer {
+  100% {
+    transform: translateX(300%);
+  }
+}
+
+.skeleton-text {
+  height: 12px;
+  border-radius: 6px;
+  background: rgba(148, 163, 184, 0.2);
+  margin-bottom: 8px;
+}
+
+.skeleton-text.short {
+  width: 120px;
+}
+
+.skeleton-text.long {
+  width: 180px;
+}

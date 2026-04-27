@@ -51,6 +51,9 @@ export default function TransactionsPage({
 }: TransactionsPageProps) {
   return (
     <section className="content-grid">
+      {/* =========================
+          FORM CARD
+      ========================= */}
       <div className="card">
         <h3>{editingId !== null ? "Edit Transaction" : "Add Transaction"}</h3>
 
@@ -140,11 +143,15 @@ export default function TransactionsPage({
         </form>
       </div>
 
+      {/* =========================
+          TRANSACTIONS LIST
+      ========================= */}
       <section className="card transactions-card">
         <div className="section-header">
           <h3>Recent Transactions</h3>
         </div>
 
+        {/* FILTERS */}
         <div className="filter-row">
           <select
             className="filter-select"
@@ -182,8 +189,22 @@ export default function TransactionsPage({
           />
         </div>
 
+        {/* =========================
+            SKELETON LOADER
+        ========================= */}
         {isLoading ? (
-          <p className="empty-state">Loading transactions...</p>
+          <div className="transactions-list">
+            {[...Array(5)].map((_, i) => (
+              <div key={i} className="transaction-row skeleton">
+                <div>
+                  <div className="skeleton-text short"></div>
+                  <div className="skeleton-text long"></div>
+                </div>
+
+                <div className="skeleton-text short"></div>
+              </div>
+            ))}
+          </div>
         ) : filteredTransactions.length === 0 ? (
           <p className="empty-state">
             No transactions yet. Start by adding one 🚀
