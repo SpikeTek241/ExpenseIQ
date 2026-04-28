@@ -1,10 +1,20 @@
 import type { Insight, Transaction } from "../types";
 
+type MonthlyReport = {
+  totalSpent: number;
+  transactionCount: number;
+  topCategory: string;
+  largestPurchase: string;
+  largestAmount: number;
+  budgetStatus: string;
+};
+
 type DashboardPageProps = {
   userEmail: string;
   totalSpent: number;
   transactions: Transaction[];
   topCategory: string;
+  monthlyReport: MonthlyReport;
   monthlyBudget: number | "";
   setMonthlyBudget: React.Dispatch<React.SetStateAction<number | "">>;
   budgetAmount: number;
@@ -21,6 +31,7 @@ export default function DashboardPage({
   totalSpent,
   transactions,
   topCategory,
+  monthlyReport,
   monthlyBudget,
   setMonthlyBudget,
   budgetAmount,
@@ -31,6 +42,9 @@ export default function DashboardPage({
   saveBudget,
   insights,
 }: DashboardPageProps) {
+  const averageTransaction =
+    transactions.length > 0 ? totalSpent / transactions.length : 0;
+
   return (
     <>
       <section className="dashboard-hero">
@@ -60,6 +74,51 @@ export default function DashboardPage({
           <p className="stat-label">Top Category</p>
           <h2 className="stat-value">{topCategory}</h2>
           <p className="stat-sub">Highest spend</p>
+        </div>
+      </section>
+
+      <section className="card report-card">
+        <div className="section-header">
+          <p className="eyebrow">Monthly Report</p>
+          <h3>Your Financial Snapshot</h3>
+        </div>
+
+        <div className="report-grid">
+          <div className="report-item highlight">
+            <span>Largest Purchase</span>
+            <strong>
+              {monthlyReport.largestPurchase} · $
+              {monthlyReport.largestAmount.toFixed(2)}
+            </strong>
+          </div>
+
+          <div className="report-item">
+            <span>Budget Used</span>
+            <strong>{budgetUsedPercent.toFixed(1)}%</strong>
+          </div>
+
+          <div className="report-item">
+            <span>Remaining</span>
+            <strong className={remainingBudget >= 0 ? "positive" : "danger"}>
+              ${remainingBudget.toFixed(2)}
+            </strong>
+          </div>
+
+          <div className="report-item">
+            <span>Average Transaction</span>
+            <strong>${averageTransaction.toFixed(2)}</strong>
+          </div>
+
+          <div className="report-item">
+            <span>Budget Status</span>
+            <strong
+              className={`status ${monthlyReport.budgetStatus
+                .toLowerCase()
+                .replaceAll(" ", "-")}`}
+            >
+              {monthlyReport.budgetStatus}
+            </strong>
+          </div>
         </div>
       </section>
 
@@ -113,7 +172,13 @@ export default function DashboardPage({
 
             <div className="budget-row">
               <span>Status</span>
-              <strong>{budgetStatus}</strong>
+              <strong
+                className={`status ${budgetStatus
+                  .toLowerCase()
+                  .replaceAll(" ", "-")}`}
+              >
+                {budgetStatus}
+              </strong>
             </div>
           </div>
         </div>

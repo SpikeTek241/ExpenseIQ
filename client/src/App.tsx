@@ -499,6 +499,32 @@ function App() {
     return Object.entries(totals).sort((a, b) => b[1] - a[1])[0][0];
   }, [transactions]);
 
+  const monthlyReport = useMemo(() => {
+    if (transactions.length === 0) {
+      return {
+        totalSpent: 0,
+        transactionCount: 0,
+        topCategory: "N/A",
+        largestPurchase: "N/A",
+        largestAmount: 0,
+        budgetStatus,
+      };
+    } 
+
+    const largestTransaction = [...transactions].sort(
+      (a, b) => b.amount - a.amount
+    )[0];
+
+    return {
+      totalSpent,
+      transactionCount: transactions.length,
+      topCategory,
+      largestPurchase: largestTransaction.merchant,
+      largestAmount: largestTransaction.amount,
+      budgetStatus,
+    };
+  }, [transactions, totalSpent, topCategory, budgetStatus]);
+
   const filteredTransactions = useMemo(() => {
     const result = transactions.filter((transaction) => {
       const matchesCategory =
@@ -693,6 +719,7 @@ function App() {
               totalSpent={totalSpent}
               transactions={transactions}
               topCategory={topCategory}
+              monthlyReport={monthlyReport}
               monthlyBudget={monthlyBudget}
               setMonthlyBudget={setMonthlyBudget}
               budgetAmount={budgetAmount}
