@@ -417,4 +417,4 @@ app.get("/api/insights", authenticate, async (req: AuthRequest, res: Response) =
   }
 });
 
-export default app;
+export default app; 
