@@ -7,6 +7,8 @@ type TransactionsPageProps = {
   setAmount: React.Dispatch<React.SetStateAction<string>>;
   category: string;
   setCategory: React.Dispatch<React.SetStateAction<string>>;
+  recurring: string;
+  setRecurring: React.Dispatch<React.SetStateAction<string>>;
   editingId: number | null;
   setEditingId: React.Dispatch<React.SetStateAction<number | null>>;
   selectedCategory: string;
@@ -32,6 +34,8 @@ export default function TransactionsPage({
   setAmount,
   category,
   setCategory,
+  recurring,
+  setRecurring,
   editingId,
   setEditingId,
   selectedCategory,
@@ -51,9 +55,6 @@ export default function TransactionsPage({
 }: TransactionsPageProps) {
   return (
     <section className="content-grid">
-      {/* =========================
-          FORM CARD
-      ========================= */}
       <div className="card">
         <h3>{editingId !== null ? "Edit Transaction" : "Add Transaction"}</h3>
 
@@ -82,10 +83,7 @@ export default function TransactionsPage({
 
           <label>
             Category
-            <select
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-            >
+            <select value={category} onChange={(e) => setCategory(e.target.value)}>
               <option value="Shopping">Shopping</option>
               <option value="Food">Food</option>
               <option value="Transport">Transport</option>
@@ -94,11 +92,18 @@ export default function TransactionsPage({
             </select>
           </label>
 
+          <label>
+            Recurring
+            <select value={recurring} onChange={(e) => setRecurring(e.target.value)}>
+              <option value="none">One-Time</option>
+              <option value="weekly">Weekly</option>
+              <option value="monthly">Monthly</option>
+            </select>
+          </label>
+
           <button
             type="submit"
-            className={`primary-button ${
-              editingId !== null ? "edit-mode" : ""
-            }`}
+            className={`primary-button ${editingId !== null ? "edit-mode" : ""}`}
             disabled={isSavingTransaction}
           >
             {isSavingTransaction
@@ -117,6 +122,7 @@ export default function TransactionsPage({
                 setMerchant("");
                 setAmount("");
                 setCategory("Shopping");
+                setRecurring("none");
               }}
             >
               Cancel
@@ -143,15 +149,11 @@ export default function TransactionsPage({
         </form>
       </div>
 
-      {/* =========================
-          TRANSACTIONS LIST
-      ========================= */}
       <section className="card transactions-card">
         <div className="section-header">
           <h3>Recent Transactions</h3>
         </div>
 
-        {/* FILTERS */}
         <div className="filter-row">
           <select
             className="filter-select"
@@ -189,9 +191,6 @@ export default function TransactionsPage({
           />
         </div>
 
-        {/* =========================
-            SKELETON LOADER
-        ========================= */}
         {isLoading ? (
           <div className="transactions-list">
             {[...Array(5)].map((_, i) => (
@@ -200,15 +199,12 @@ export default function TransactionsPage({
                   <div className="skeleton-text short"></div>
                   <div className="skeleton-text long"></div>
                 </div>
-
                 <div className="skeleton-text short"></div>
               </div>
             ))}
           </div>
         ) : filteredTransactions.length === 0 ? (
-          <p className="empty-state">
-            No transactions yet. Start by adding one 🚀
-          </p>
+          <p className="empty-state">No transactions yet. Start by adding one 🚀</p>
         ) : (
           <div className="transactions-list">
             {filteredTransactions.map((t) => (
@@ -216,6 +212,10 @@ export default function TransactionsPage({
                 <div>
                   <p className="merchant">{t.merchant}</p>
                   <p className="category-badge">{t.category}</p>
+
+                  {t.isRecurring && (
+                    <p className="recurring-badge">🔁 {t.frequency}</p>
+                  )}
                 </div>
 
                 <div className="transaction-actions">

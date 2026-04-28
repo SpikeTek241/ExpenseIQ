@@ -6,6 +6,8 @@ export type Transaction = {
   createdAt: string;
   updatedAt?: string;
   userId?: number;
+  isRecurring?: boolean;
+  frequency?: string | null;
 };
 
 export type Budget = {

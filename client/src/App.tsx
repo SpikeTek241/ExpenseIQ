@@ -40,6 +40,7 @@ function App() {
   const [merchant, setMerchant] = useState("");
   const [amount, setAmount] = useState("");
   const [category, setCategory] = useState("Shopping");
+  const [recurring, setRecurring] = useState("none");
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [sortOption, setSortOption] = useState("newest");
@@ -53,6 +54,7 @@ function App() {
   const [isSavingBudget, setIsSavingBudget] = useState(false);
   const [isLoadingTransactions, setIsLoadingTransactions] = useState(false);
 
+ 
   const [dateRange, setDateRange] = useState<DateRange>("all");
 
   useEffect(() => {
@@ -285,6 +287,8 @@ function App() {
           merchant: merchant.trim(),
           amount: Number(amount),
           category,
+          isRecurring: recurring !== "none",
+          frequency: recurring !== "none" ? recurring : null,
         }),
       });
 
@@ -306,6 +310,7 @@ function App() {
       setMerchant("");
       setAmount("");
       setCategory("Shopping");
+      setRecurring("none");
       setEditingId(null);
 
       await fetchTransactions();
@@ -456,6 +461,9 @@ function App() {
     setMerchant(transaction.merchant);
     setAmount(transaction.amount.toString());
     setCategory(transaction.category);
+    setRecurring(
+      transaction.isRecurring ? transaction.frequency || "none" : "none"
+    );
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -751,6 +759,8 @@ function App() {
               setSearchQuery={setSearchQuery}
               sortOption={sortOption}
               setSortOption={setSortOption}
+              recurring={recurring}
+              setRecurring={setRecurring}
               isSavingTransaction={isSavingTransaction}
               isLoading={isLoadingTransactions}
               addTransaction={addTransaction}
