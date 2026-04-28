@@ -1,17 +1,16 @@
 import { useState } from "react";
-import logo from "../assets/logoiq.png"
+import logo from "../assets/logoiq.png";
 
 type AuthFormProps = {
   onLoginSuccess: (token: string, user: { id: number; email: string }) => void;
 };
 
-const API_BASE =
-  import.meta.env.VITE_API_BASE_URL || "http://localhost:4000";
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:4000";
 
 export default function LoginForm({ onLoginSuccess }: AuthFormProps) {
   const [mode, setMode] = useState<"login" | "signup">("login");
-  const [email, setEmail] = useState("test@test.com");
-  const [password, setPassword] = useState("123456");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -64,6 +63,9 @@ export default function LoginForm({ onLoginSuccess }: AuthFormProps) {
       localStorage.setItem("token", loginData.token);
       localStorage.setItem("user", JSON.stringify(loginData.user));
 
+      setEmail("");
+      setPassword("");
+
       onLoginSuccess(loginData.token, loginData.user);
     } catch (err) {
       const message =
@@ -74,12 +76,18 @@ export default function LoginForm({ onLoginSuccess }: AuthFormProps) {
     }
   };
 
+  const handleModeSwitch = () => {
+    setError("");
+    setEmail("");
+    setPassword("");
+    setMode((prev) => (prev === "login" ? "signup" : "login"));
+  };
+
   return (
     <div className="auth-shell">
       <div className="auth-card">
-
         <img src={logo} alt="ExpenseIQ logo" className="login-logo" />
-        
+
         <h1 className="auth-title">
           {mode === "login" ? "Welcome to ExpenseIQ" : "Create your account"}
         </h1>
@@ -90,24 +98,30 @@ export default function LoginForm({ onLoginSuccess }: AuthFormProps) {
             : "Create an account to start tracking your budget and spending."}
         </p>
 
-        <form onSubmit={handleAuth} className="auth-form">
-          <label>
+        <form onSubmit={handleAuth} className="auth-form" autoComplete="off">
+          <label htmlFor="expenseiq-email">
             Email
             <input
+              id="expenseiq-email"
+              name="expenseiq-email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="Enter your email"
+              autoComplete="off"
             />
           </label>
 
-          <label>
+          <label htmlFor="expenseiq-password">
             Password
             <input
+              id="expenseiq-password"
+              name="expenseiq-password"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Enter your password"
+              autoComplete="new-password"
             />
           </label>
 
@@ -131,10 +145,7 @@ export default function LoginForm({ onLoginSuccess }: AuthFormProps) {
         <button
           type="button"
           className="auth-switch-button"
-          onClick={() => {
-            setError("");
-            setMode((prev) => (prev === "login" ? "signup" : "login"));
-          }}
+          onClick={handleModeSwitch}
         >
           {mode === "login"
             ? "Need an account? Sign up"
