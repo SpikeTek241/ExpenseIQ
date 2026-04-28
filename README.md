@@ -1,114 +1,102 @@
-# ExpenseIQ
+# ExpenseIQ 💳📊
 
-AI-powered expense intelligence dashboard for tracking, analyzing, and improving financial behavior.
-
-ExpenseIQ helps users move beyond basic expense tracking by providing insights, analytics, and budgeting feedback in a clean, modern dashboard experience.
-
----
+Smart expense intelligence dashboard for tracking spending, managing budgets, and generating actionable financial insights.
 
 ## 🚀 Live Demo
-🔗 https://expense-iq-lilac.vercel.app/
+👉 https://expense-iq-lilac.vercel.app/
+
+## 🧠 Overview
+ExpenseIQ is a full-stack web application designed to help users:
+- Track daily transactions
+- Monitor monthly budgets
+- Visualize spending trends
+- Generate intelligent financial insights
+
+This project focuses on **real-world fintech patterns**, performance, and clean UI/UX.
 
 ---
 
 ## ✨ Features
 
-### 💳 Smart Transaction Management
-- Add, edit, and delete transactions
-- Duplicate detection to prevent repeated entries
-- Category-based organization (Food, Bills, Shopping, etc.)
+### 📊 Dashboard
+- Total spend tracking
+- Monthly financial snapshot
+- Budget usage + remaining balance
+- Smart insights (AI-style signals)
 
-### 📊 Analytics Dashboard
-- Category-based spending visualization
-- Daily spending trends
-- Cumulative spending insights
-- Time filtering (7 days / 30 days / all time)
+### 💸 Transactions
+- Add, edit, delete transactions
+- Category filtering & search
+- Duplicate detection logic
+- CSV export
 
-### 🧠 AI-Powered Insights
-- Highlights spending patterns
-- Detects high-spending categories
-- Provides real-time financial feedback
+### 📈 Analytics
+- Spending trends over time
+- Category breakdown charts
+- Date filtering (7d / 30d / all-time)
+- Cumulative spend visualization
 
-### 💰 Budget Tracking
-- Set monthly budgets
-- Real-time progress tracking
-- Visual indicators (On track / Warning / Over budget)
-
-### ⚡ Productivity Features
-- CSV export for transactions
-- Demo data seeding for testing
-- Advanced filtering, searching, and sorting
-- Toast notifications for real-time feedback
+### 🧠 Smart Insights
+- Spending pattern detection
+- Largest purchase identification
+- Budget forecasting
+- Status classification (On Track / Warning / Over Budget)
 
 ---
 
 ## 🛠 Tech Stack
 
-### Frontend
-- React
-- TypeScript
+**Frontend**
+- React + TypeScript
 - Vite
-- Recharts (data visualization)
+- Recharts
+- CSS (custom styling)
 
-### Backend
-- Node.js
-- Express
+**Backend**
+- Node.js + Express
+- REST API architecture
+- JWT Authentication
 
-### State & UX
-- React Hooks (useState, useEffect, useMemo)
-- Optimized rendering + derived state
+**Database**
+- PostgreSQL
+- Prisma ORM
+
+**Deployment**
+- Frontend: Vercel
+- Backend: Render
 
 ---
 
-## 🧩 Project Structure
-
-bash client/   src/     components/     pages/     types/     App.tsx  server/   routes/   controllers/   models/ 
-
----
+## 🔐 Authentication
+- JWT-based authentication
+- Secure API routes
+- Protected frontend routes
+- Token persistence via localStorage
 
 ## 📸 Screenshots
 
-<img width="655" height="786" alt="Dashboard" src="https://github.com/user-attachments/assets/2e3d481a-8862-4dac-a483-ae2600500884" />
-<img width="592" height="336" alt="Transactions" src="https://github.com/user-attachments/assets/a062f308-63f7-43f0-a674-fd08d87397f3" />
-<img width="603" height="768" alt="Analytics" src="https://github.com/user-attachments/assets/bce0e59d-2127-4a3b-b359-e1a3d5128f61" />
-<img width="606" height="217" alt="Analytics II" src="https://github.com/user-attachments/assets/7c7221c3-7004-465b-bad0-6e11f17c7d58" />
----
+### Dashboard
+<img width="788" height="932" alt="Updated Dashboard v2" src="https://github.com/user-attachments/assets/fc36143f-b6d6-4b10-a003-9251a36508bf" />
+### Transactions
+<img width="592" height="336" alt="Transactions" src="https://github.com/user-attachments/assets/f3ac16cb-e986-42bb-ae3f-4b7a6d091773" />
+### Analytics
+<img width="603" height="768" alt="Analytics" src="https://github.com/user-attachments/assets/b2a1612f-1483-4aba-8f01-3f2d65dc006e" />
+<img width="606" height="217" alt="Analytics II" src="https://github.com/user-attachments/assets/baca12e7-ac2a-4110-ac8a-b36dcceea435" />
 
-## 🧠 Why I Built This
+🔮 Future Improvements
 
-Most expense trackers only show what you spent.
-
-ExpenseIQ focuses on:
-- Why you’re spending
-- Where patterns exist
-- How to improve behavior
-
-This project was built to simulate a real-world fintech dashboard similar to tools like Ramp or Mint, with a focus on:
-- clean UI/UX
-- performance
-- actionable insights
+* Google OAuth
+* Password reset
+* Recurring transactions
+* AI-powered chat assistant
+* Docker containerization
+* Unit + integration testing
 
 ---
 
-## 🔮 Future Improvements
+## 🧩 Architecture
 
-- Authentication (JWT + secure sessions)
-- Persistent cloud database (PostgreSQL)
-- AI-driven recommendations (OpenAI integration)
-- Recurring transactions
-- Mobile optimization
-
----
-
-## 📌 Status
-
-🚧 Active Development  
-Phase 10: Backend Deployment & Production Infrastructure
-
----
-
-## 👤 Author
-
-Kevin Jerome  
+```txt
+React Frontend → Express API → Prisma → PostgreSQL
 🔗 https://www.linkedin.com/in/kevinjerome-kj/  
 💻 https://github.com/SpikeTek241
