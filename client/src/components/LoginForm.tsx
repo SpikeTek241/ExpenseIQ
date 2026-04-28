@@ -1,4 +1,5 @@
 import { useState } from "react";
+import toast from "react-hot-toast";
 import logo from "../assets/logoiq.png";
 
 type AuthFormProps = {
@@ -41,6 +42,8 @@ export default function LoginForm({ onLoginSuccess }: AuthFormProps) {
         if (!registerRes.ok) {
           throw new Error(registerData.error || "Signup failed");
         }
+
+        toast.success("Account created successfully!");
       }
 
       const loginRes = await fetch(`${API_BASE}/api/auth/login`, {
@@ -66,11 +69,15 @@ export default function LoginForm({ onLoginSuccess }: AuthFormProps) {
       setEmail("");
       setPassword("");
 
+      toast.success(mode === "login" ? "Welcome back!" : "Signed in successfully!");
+
       onLoginSuccess(loginData.token, loginData.user);
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "Something went wrong";
+
       setError(message);
+      toast.error(message);
     } finally {
       setIsLoading(false);
     }
@@ -127,11 +134,7 @@ export default function LoginForm({ onLoginSuccess }: AuthFormProps) {
 
           {error && <p className="auth-error">{error}</p>}
 
-          <button
-            type="submit"
-            className="primary-button"
-            disabled={isLoading}
-          >
+          <button type="submit" className="primary-button" disabled={isLoading}>
             {isLoading
               ? mode === "login"
                 ? "Signing in..."
