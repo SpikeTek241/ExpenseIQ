@@ -1,215 +1,114 @@
-# 💰 ExpenseIQ — Full-Stack Expense Intelligence Dashboard
+# ExpenseIQ
 
-ExpenseIQ is a full-stack financial analytics platform designed to help users track spending, analyze behavior, and gain actionable insights through real-time data visualization.
+AI-powered expense intelligence dashboard for tracking, analyzing, and improving financial behavior.
 
-Built with a modern tech stack and production-style architecture, this project demonstrates end-to-end development—from API design to responsive UI/UX.
+ExpenseIQ helps users move beyond basic expense tracking by providing insights, analytics, and budgeting feedback in a clean, modern dashboard experience.
 
 ---
 
 ## 🚀 Live Demo
-
-👉 https://expense-iq-lilac.vercel.app/
+🔗 https://expense-iq-lilac.vercel.app/
 
 ---
 
-## 🧱 Architecture Overview
+## ✨ Features
 
-ExpenseIQ follows a client-server architecture:
+### 💳 Smart Transaction Management
+- Add, edit, and delete transactions
+- Duplicate detection to prevent repeated entries
+- Category-based organization (Food, Bills, Shopping, etc.)
 
-* **Frontend:** React + TypeScript (Vite)
-* **Backend:** Node.js + Express
-* **Database:** PostgreSQL (via Prisma ORM)
-* **Data Flow:** RESTful API → JSON → UI state → Charts/Insights
+### 📊 Analytics Dashboard
+- Category-based spending visualization
+- Daily spending trends
+- Cumulative spending insights
+- Time filtering (7 days / 30 days / all time)
 
-```txt
-Client (React) → API (Express) → Database (PostgreSQL)
-```
+### 🧠 AI-Powered Insights
+- Highlights spending patterns
+- Detects high-spending categories
+- Provides real-time financial feedback
+
+### 💰 Budget Tracking
+- Set monthly budgets
+- Real-time progress tracking
+- Visual indicators (On track / Warning / Over budget)
+
+### ⚡ Productivity Features
+- CSV export for transactions
+- Demo data seeding for testing
+- Advanced filtering, searching, and sorting
+- Toast notifications for real-time feedback
 
 ---
 
 ## 🛠 Tech Stack
 
 ### Frontend
-
-* React
-* TypeScript
-* Vite
-* Recharts (data visualization)
+- React
+- TypeScript
+- Vite
+- Recharts (data visualization)
 
 ### Backend
+- Node.js
+- Express
 
-* Node.js
-* Express
-* Prisma ORM
-
-### Database
-
-* PostgreSQL
-
-### Deployment
-
-* Vercel (Frontend)
-* (Render / Local) Backend
+### State & UX
+- React Hooks (useState, useEffect, useMemo)
+- Optimized rendering + derived state
 
 ---
 
-## ✨ Core Features
+## 🧩 Project Structure
 
-### 🔐 Authentication
-
-* JWT-based authentication system
-* Protected routes for user-specific data access
-
-### 💸 Transaction Management
-
-* Create, update, delete transactions
-* Category-based organization
-* Real-time updates
-
-### 📊 Analytics Dashboard
-
-* Category spending breakdown
-* Daily spending trends
-* Cumulative spending tracking
-* Percentage distribution by category
-
-### 📅 Smart Filtering
-
-* Last 7 days
-* Last 30 days
-* All-time analytics
-
-### 🧠 Intelligent Insights
-
-* Total spending summaries
-* Highest transaction detection
-* Peak spending day analysis
-* Behavior-driven insights
-
-### 📤 Export System
-
-* Export transactions to CSV format
-* Structured for external financial analysis
-
-### ⚡ UX Enhancements
-
-* Loading states
-* Empty states
-* Responsive layout
-* Smooth data updates
+bash client/   src/     components/     pages/     types/     App.tsx  server/   routes/   controllers/   models/ 
 
 ---
 
 ## 📸 Screenshots
-## Demo
-<img width="1138" height="926" alt="dashboard" src="https://github.com/user-attachments/assets/31a7040f-e563-4c8b-94d1-77f07fa86261" />
-<img width="1270" height="931" alt="transactions" src="https://github.com/user-attachments/assets/e4263075-f1b5-4167-80bd-d39adf061336" />
-<img width="1680" height="1050" alt="Updated AI Analytics" src="https://github.com/user-attachments/assets/c919f711-e57b-463e-9435-e63f047da3fa" />
+
+<img width="655" height="786" alt="Dashboard" src="https://github.com/user-attachments/assets/2e3d481a-8862-4dac-a483-ae2600500884" />
+<img width="592" height="336" alt="Transactions" src="https://github.com/user-attachments/assets/a062f308-63f7-43f0-a674-fd08d87397f3" />
+<img width="603" height="768" alt="Analytics" src="https://github.com/user-attachments/assets/bce0e59d-2127-4a3b-b359-e1a3d5128f61" />
+<img width="606" height="217" alt="Analytics II" src="https://github.com/user-attachments/assets/7c7221c3-7004-465b-bad0-6e11f17c7d58" />
+---
+
+## 🧠 Why I Built This
+
+Most expense trackers only show what you spent.
+
+ExpenseIQ focuses on:
+- Why you’re spending
+- Where patterns exist
+- How to improve behavior
+
+This project was built to simulate a real-world fintech dashboard similar to tools like Ramp or Mint, with a focus on:
+- clean UI/UX
+- performance
+- actionable insights
 
 ---
 
-## ⚙️ Local Setup
+## 🔮 Future Improvements
 
-### 1. Clone repository
-
-```bash
-git clone https://github.com/your-username/ExpenseIQ.git
-cd ExpenseIQ
-```
-
-### 2. Install dependencies
-
-```bash
-cd client
-npm install
-
-cd ../server
-npm install
-```
-
-### 3. Configure environment variables
-
-Create `.env` in server:
-
-```env
-DATABASE_URL=your_postgres_url
-JWT_SECRET=your_secret
-```
-
-### 4. Run application
-
-```bash
-# Backend
-cd server
-npm run dev
-
-# Frontend
-cd ../client
-npm run dev
-```
+- Authentication (JWT + secure sessions)
+- Persistent cloud database (PostgreSQL)
+- AI-driven recommendations (OpenAI integration)
+- Recurring transactions
+- Mobile optimization
 
 ---
 
-## 📌 API Overview
+## 📌 Status
 
-### Transactions
-
-* `GET /api/transactions`
-* `POST /api/transactions`
-* `PUT /api/transactions/:id`
-* `DELETE /api/transactions/:id`
-
-### Budgets
-
-* `GET /api/budgets`
-* `POST /api/budgets`
-
-### Insights
-
-* `GET /api/insights`
-
----
-
-## 🧠 Engineering Highlights
-
-* Designed normalized relational schema using Prisma
-* Implemented secure user-scoped queries
-* Built reusable data transformation layers for analytics
-* Optimized rendering with React hooks (`useMemo`)
-* Structured scalable API routes with middleware authentication
-
----
-
-## 🚧 Future Improvements
-
-* OAuth (Google Login)
-* Recurring transactions
-* AI-powered financial assistant
-* Notifications & alerts
-* Mobile optimization
-* Unit & integration testing
-* Docker containerization
-
----
-
-## 📈 What This Project Demonstrates
-
-* Full-stack development (frontend + backend + database)
-* API design and data modeling
-* Real-time data processing
-* Analytics and visualization
-* UX-focused engineering decisions
+🚧 Active Development  
+Phase 10: Backend Deployment & Production Infrastructure
 
 ---
 
 ## 👤 Author
 
-**Kevin Jerome**
-Full-Stack Developer | React | Node.js | TypeScript
-
----
-
-⭐ If you found this project valuable, consider starring the repo!
-
-<img width="1680" height="1050" alt="Updated AI Analytics " src="https://github.com/user-attachments/assets/666bb967-50ae-4bff-91c1-f0888ed3fa41" />
-
+Kevin Jerome  
+🔗 https://www.linkedin.com/in/kevinjerome-kj/  
+💻 https://github.com/SpikeTek241
