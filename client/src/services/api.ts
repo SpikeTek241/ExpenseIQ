@@ -3,9 +3,12 @@ import type { Transaction, Budget, InsightsResponse } from "../types";
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:4000";
 
 export class ApiError extends Error {
-  constructor(public readonly status: number, message: string) {
+  status: number;
+
+  constructor(status: number, message: string) {
     super(message);
     this.name = "ApiError";
+    this.status = status;
   }
 }
 
